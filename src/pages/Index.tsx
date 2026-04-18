@@ -74,14 +74,19 @@ const Index = () => {
     const fatto = courses.reduce((s, c) => s + c.fatto, 0);
     const caricato = courses.reduce((s, c) => s + c.caricato, 0);
     const totale = courses.reduce((s, c) => s + c.totale, 0);
-    return { fatto, caricato, daCaricare: totale - fatto - caricato, totale };
+    return { fatto, caricato, daCaricare: totale - caricato, totale };
   }, [courses]);
 
+  // Vincoli: caricato ≤ totale, fatto ≤ caricato
   const clamp = (c: Course, key: EditableKey, value: number): Course => {
     const next = Math.max(0, isNaN(value) ? 0 : value);
-    const other = key === "fatto" ? c.caricato : c.fatto;
-    const max = Math.max(0, c.totale - other);
-    return { ...c, [key]: Math.min(next, max) };
+    if (key === "caricato") {
+      const caricato = Math.min(next, c.totale);
+      const fatto = Math.min(c.fatto, caricato);
+      return { ...c, caricato, fatto };
+    }
+    // key === "fatto"
+    return { ...c, fatto: Math.min(next, c.caricato) };
   };
 
   const update = (id: string, key: EditableKey, delta: number) => {
@@ -153,7 +158,7 @@ const Index = () => {
         <div className="hairline" />
 
         {courses.map((c) => {
-          const daCaricare = c.totale - c.fatto - c.caricato;
+          const daCaricare = c.totale - c.caricato;
           return (
             <div key={c.id}>
               <div className="grid grid-cols-[1fr_repeat(4,minmax(60px,90px))_36px] md:grid-cols-[2fr_repeat(4,minmax(100px,130px))_56px] items-center gap-3 md:gap-4 py-5">
@@ -163,14 +168,14 @@ const Index = () => {
 
                 <Stepper
                   value={c.fatto}
-                  max={c.totale - c.caricato}
+                  max={c.caricato}
                   onChange={(v) => setValue(c.id, "fatto", v)}
                   onInc={() => update(c.id, "fatto", 1)}
                   onDec={() => update(c.id, "fatto", -1)}
                 />
                 <Stepper
                   value={c.caricato}
-                  max={c.totale - c.fatto}
+                  max={c.totale}
                   onChange={(v) => setValue(c.id, "caricato", v)}
                   onInc={() => update(c.id, "caricato", 1)}
                   onDec={() => update(c.id, "caricato", -1)}
@@ -229,6 +234,7 @@ const Index = () => {
               </span>
               <span className="flex items-center gap-2">
                 <span className="inline-block h-3 w-3 bg-accent" /> Caricato
+                (non fatto)
               </span>
               <span className="flex items-center gap-2">
                 <span className="inline-block h-3 w-3 border border-foreground/60 bg-background" />
@@ -243,8 +249,8 @@ const Index = () => {
                 data={courses.map((c) => ({
                   name: c.name,
                   Fatto: c.fatto,
-                  Caricato: c.caricato,
-                  "Da caricare": Math.max(0, c.totale - c.fatto - c.caricato),
+                  "Caricato (non fatto)": Math.max(0, c.caricato - c.fatto),
+                  "Da caricare": Math.max(0, c.totale - c.caricato),
                 }))}
                 margin={{ top: 8, right: 8, left: -16, bottom: 0 }}
               >
@@ -288,7 +294,11 @@ const Index = () => {
                   }}
                 />
                 <Bar dataKey="Fatto" stackId="a" fill="hsl(var(--primary))" />
-                <Bar dataKey="Caricato" stackId="a" fill="hsl(var(--accent))" />
+                <Bar
+                  dataKey="Caricato (non fatto)"
+                  stackId="a"
+                  fill="hsl(var(--accent))"
+                />
                 <Bar
                   dataKey="Da caricare"
                   stackId="a"
