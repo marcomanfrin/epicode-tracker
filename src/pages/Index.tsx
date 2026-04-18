@@ -1,5 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { Plus, Trash2, Minus } from "lucide-react";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 
 type Course = {
   id: string;
@@ -161,6 +171,92 @@ const Index = () => {
             <span className="bg-accent px-2 py-0.5">{totals.tot}</span>
           </span>
           <span />
+        </div>
+
+        {/* CHART — andamento per corso */}
+        <div className="mt-16">
+          <div className="flex items-baseline justify-between mb-6">
+            <div>
+              <span className="label-meta">Andamento</span>
+              <h2 className="font-serif text-3xl md:text-4xl mt-2">
+                Progresso per <span className="italic">corso</span>
+              </h2>
+            </div>
+            <div className="hidden sm:flex items-center gap-4 label-meta">
+              <span className="flex items-center gap-2">
+                <span className="inline-block h-3 w-3 bg-primary" /> Fatto
+              </span>
+              <span className="flex items-center gap-2">
+                <span className="inline-block h-3 w-3 border border-foreground" />
+                Da caricare
+              </span>
+            </div>
+          </div>
+          <div className="hairline" />
+          <div className="h-[320px] md:h-[380px] w-full mt-6">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={courses.map((c) => ({
+                  name: c.name,
+                  Fatto: c.fatto,
+                  "Da caricare": c.daCaricare,
+                }))}
+                margin={{ top: 8, right: 8, left: -16, bottom: 0 }}
+              >
+                <CartesianGrid
+                  vertical={false}
+                  stroke="hsl(var(--border-soft))"
+                />
+                <XAxis
+                  dataKey="name"
+                  tick={{
+                    fill: "hsl(var(--muted-foreground))",
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 11,
+                  }}
+                  tickLine={false}
+                  axisLine={{ stroke: "hsl(var(--border))" }}
+                />
+                <YAxis
+                  allowDecimals={false}
+                  tick={{
+                    fill: "hsl(var(--muted-foreground))",
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 11,
+                  }}
+                  tickLine={false}
+                  axisLine={false}
+                />
+                <Tooltip
+                  cursor={{ fill: "hsl(var(--accent) / 0.2)" }}
+                  contentStyle={{
+                    background: "hsl(var(--surface-dark))",
+                    border: "none",
+                    borderRadius: 0,
+                    color: "hsl(var(--surface-dark-foreground))",
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 12,
+                  }}
+                  labelStyle={{
+                    color: "hsl(var(--accent))",
+                    fontFamily: "var(--font-mono)",
+                  }}
+                />
+                <Bar dataKey="Fatto" stackId="a" fill="hsl(var(--primary))">
+                  {courses.map((c) => (
+                    <Cell key={c.id} />
+                  ))}
+                </Bar>
+                <Bar
+                  dataKey="Da caricare"
+                  stackId="a"
+                  fill="hsl(var(--accent))"
+                  stroke="hsl(var(--foreground))"
+                  strokeWidth={1}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       </section>
 
