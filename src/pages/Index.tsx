@@ -249,8 +249,8 @@ const Index = () => {
                 data={courses.map((c) => ({
                   name: c.name,
                   Fatto: c.fatto,
-                  Caricato: c.caricato,
-                  "Da caricare": Math.max(0, c.totale - c.fatto - c.caricato),
+                  "Caricato (non fatto)": Math.max(0, c.caricato - c.fatto),
+                  "Da caricare": Math.max(0, c.totale - c.caricato),
                 }))}
                 margin={{ top: 8, right: 8, left: -16, bottom: 0 }}
               >
