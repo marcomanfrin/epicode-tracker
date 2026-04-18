@@ -294,7 +294,11 @@ const Index = () => {
                   }}
                 />
                 <Bar dataKey="Fatto" stackId="a" fill="hsl(var(--primary))" />
-                <Bar dataKey="Caricato" stackId="a" fill="hsl(var(--accent))" />
+                <Bar
+                  dataKey="Caricato (non fatto)"
+                  stackId="a"
+                  fill="hsl(var(--accent))"
+                />
                 <Bar
                   dataKey="Da caricare"
                   stackId="a"
