@@ -158,7 +158,7 @@ const Index = () => {
         <div className="hairline" />
 
         {courses.map((c) => {
-          const daCaricare = c.totale - c.fatto - c.caricato;
+          const daCaricare = c.totale - c.caricato;
           return (
             <div key={c.id}>
               <div className="grid grid-cols-[1fr_repeat(4,minmax(60px,90px))_36px] md:grid-cols-[2fr_repeat(4,minmax(100px,130px))_56px] items-center gap-3 md:gap-4 py-5">
@@ -168,14 +168,14 @@ const Index = () => {
 
                 <Stepper
                   value={c.fatto}
-                  max={c.totale - c.caricato}
+                  max={c.caricato}
                   onChange={(v) => setValue(c.id, "fatto", v)}
                   onInc={() => update(c.id, "fatto", 1)}
                   onDec={() => update(c.id, "fatto", -1)}
                 />
                 <Stepper
                   value={c.caricato}
-                  max={c.totale - c.fatto}
+                  max={c.totale}
                   onChange={(v) => setValue(c.id, "caricato", v)}
                   onInc={() => update(c.id, "caricato", 1)}
                   onDec={() => update(c.id, "caricato", -1)}
