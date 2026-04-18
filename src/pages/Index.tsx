@@ -9,66 +9,56 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 type Course = {
   id: string;
   name: string;
-  totale: number; // fisso, impostato alla creazione
+  totale: number;
   fatto: number;
   caricato: number;
+  position: number;
 };
 
 type EditableKey = "fatto" | "caricato";
 
-const STORAGE_KEY = "course-tracker:v2";
-const LEGACY_KEY = "course-tracker:v1";
-
-const DEFAULT_COURSES: Course[] = [
-  { id: "hci", name: "HCI", totale: 6, fatto: 3, caricato: 3 },
-  { id: "cloud", name: "Cloud", totale: 7, fatto: 3, caricato: 4 },
-  { id: "cv", name: "CV", totale: 6, fatto: 2, caricato: 3 },
-  { id: "ml", name: "ML", totale: 6, fatto: 2, caricato: 0 },
-  { id: "cicd", name: "CI/CD", totale: 12, fatto: 6, caricato: 6 },
-];
-
-const uid = () => Math.random().toString(36).slice(2, 9);
-
-const loadCourses = (): Course[] => {
-  if (typeof window === "undefined") return DEFAULT_COURSES;
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw) as Course[];
-    // Migrazione da v1: fatto + daCaricare => totale
-    const legacy = localStorage.getItem(LEGACY_KEY);
-    if (legacy) {
-      const old = JSON.parse(legacy) as Array<{
-        id: string;
-        name: string;
-        fatto: number;
-        daCaricare: number;
-      }>;
-      return old.map((c) => ({
-        id: c.id,
-        name: c.name,
-        totale: c.fatto + c.daCaricare,
-        fatto: c.fatto,
-        caricato: 0,
-      }));
-    }
-    return DEFAULT_COURSES;
-  } catch {
-    return DEFAULT_COURSES;
-  }
-};
-
 const Index = () => {
-  const [courses, setCourses] = useState<Course[]>(loadCourses);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [loading, setLoading] = useState(true);
   const [newName, setNewName] = useState("");
   const [newTot, setNewTot] = useState<string>("");
 
+  // Initial load + realtime sync
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(courses));
-  }, [courses]);
+    const load = async () => {
+      const { data, error } = await supabase
+        .from("courses")
+        .select("*")
+        .order("position", { ascending: true })
+        .order("created_at", { ascending: true });
+      if (error) {
+        toast.error("Errore nel caricamento: " + error.message);
+      } else {
+        setCourses(data ?? []);
+      }
+      setLoading(false);
+    };
+    load();
+
+    const channel = supabase
+      .channel("courses-changes")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "courses" },
+        () => load(),
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   const totals = useMemo(() => {
     const fatto = courses.reduce((s, c) => s + c.fatto, 0);
@@ -85,34 +75,57 @@ const Index = () => {
       const fatto = Math.min(c.fatto, caricato);
       return { ...c, caricato, fatto };
     }
-    // key === "fatto"
     return { ...c, fatto: Math.min(next, c.caricato) };
   };
 
-  const update = (id: string, key: EditableKey, delta: number) => {
-    setCourses((prev) =>
-      prev.map((c) => (c.id === id ? clamp(c, key, c[key] + delta) : c)),
-    );
+  const persist = async (c: Course) => {
+    const { error } = await supabase
+      .from("courses")
+      .update({ fatto: c.fatto, caricato: c.caricato })
+      .eq("id", c.id);
+    if (error) toast.error("Errore di salvataggio: " + error.message);
   };
 
-  const setValue = (id: string, key: EditableKey, value: number) => {
-    setCourses((prev) =>
-      prev.map((c) => (c.id === id ? clamp(c, key, value) : c)),
-    );
+  const applyChange = (id: string, key: EditableKey, compute: (c: Course) => number) => {
+    const current = courses.find((c) => c.id === id);
+    if (!current) return;
+    const updated = clamp(current, key, compute(current));
+    // Optimistic update
+    setCourses((prev) => prev.map((c) => (c.id === id ? updated : c)));
+    persist(updated);
   };
 
-  const remove = (id: string) =>
-    setCourses((prev) => prev.filter((c) => c.id !== id));
+  const update = (id: string, key: EditableKey, delta: number) =>
+    applyChange(id, key, (c) => c[key] + delta);
 
-  const add = (e: React.FormEvent) => {
+  const setValue = (id: string, key: EditableKey, value: number) =>
+    applyChange(id, key, () => value);
+
+  const remove = async (id: string) => {
+    const prev = courses;
+    setCourses((p) => p.filter((c) => c.id !== id));
+    const { error } = await supabase.from("courses").delete().eq("id", id);
+    if (error) {
+      toast.error("Errore: " + error.message);
+      setCourses(prev);
+    }
+  };
+
+  const add = async (e: React.FormEvent) => {
     e.preventDefault();
     const name = newName.trim();
     const totale = parseInt(newTot, 10);
     if (!name || isNaN(totale) || totale < 1) return;
-    setCourses((prev) => [
-      ...prev,
-      { id: uid(), name, totale, fatto: 0, caricato: 0 },
-    ]);
+    const position = courses.length
+      ? Math.max(...courses.map((c) => c.position)) + 1
+      : 0;
+    const { error } = await supabase
+      .from("courses")
+      .insert({ name, totale, fatto: 0, caricato: 0, position });
+    if (error) {
+      toast.error("Errore: " + error.message);
+      return;
+    }
     setNewName("");
     setNewTot("");
   };
@@ -139,14 +152,13 @@ const Index = () => {
         </h1>
         <p className="mt-6 max-w-xl text-base md:text-lg text-muted-foreground font-sans">
           Imposta il totale di moduli all'inizio del corso, poi aggiorna man
-          mano quanti hai <em>fatto</em> e quanti hai <em>caricato</em>.
+          mano quanti hai <em>caricato</em> e quanti hai <em>fatto</em>.
         </p>
       </header>
 
       {/* TABLE SECTION */}
       <section className="container-editorial pb-20">
         <div className="hairline" />
-        {/* Header row */}
         <div className="grid grid-cols-[1fr_repeat(4,minmax(60px,90px))_36px] md:grid-cols-[2fr_repeat(4,minmax(100px,130px))_56px] items-end gap-3 md:gap-4 py-5">
           <span className="label-meta">Corso</span>
           <span className="label-meta text-right">Fatto</span>
@@ -156,6 +168,16 @@ const Index = () => {
           <span />
         </div>
         <div className="hairline" />
+
+        {loading && (
+          <div className="py-10 text-center label-meta">Caricamento…</div>
+        )}
+
+        {!loading && courses.length === 0 && (
+          <div className="py-10 text-center text-muted-foreground font-sans">
+            Nessun corso. Aggiungine uno qui sotto.
+          </div>
+        )}
 
         {courses.map((c) => {
           const daCaricare = c.totale - c.caricato;
@@ -357,7 +379,8 @@ const Index = () => {
       <footer className="container-editorial py-10">
         <div className="hairline mb-6" />
         <p className="label-meta">
-          Salvato localmente · {new Date().getFullYear()}
+          Salvato sul cloud · sincronizzato in tempo reale ·{" "}
+          {new Date().getFullYear()}
         </p>
       </footer>
     </main>
