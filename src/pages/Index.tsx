@@ -74,14 +74,19 @@ const Index = () => {
     const fatto = courses.reduce((s, c) => s + c.fatto, 0);
     const caricato = courses.reduce((s, c) => s + c.caricato, 0);
     const totale = courses.reduce((s, c) => s + c.totale, 0);
-    return { fatto, caricato, daCaricare: totale - fatto - caricato, totale };
+    return { fatto, caricato, daCaricare: totale - caricato, totale };
   }, [courses]);
 
+  // Vincoli: caricato ≤ totale, fatto ≤ caricato
   const clamp = (c: Course, key: EditableKey, value: number): Course => {
     const next = Math.max(0, isNaN(value) ? 0 : value);
-    const other = key === "fatto" ? c.caricato : c.fatto;
-    const max = Math.max(0, c.totale - other);
-    return { ...c, [key]: Math.min(next, max) };
+    if (key === "caricato") {
+      const caricato = Math.min(next, c.totale);
+      const fatto = Math.min(c.fatto, caricato);
+      return { ...c, caricato, fatto };
+    }
+    // key === "fatto"
+    return { ...c, fatto: Math.min(next, c.caricato) };
   };
 
   const update = (id: string, key: EditableKey, delta: number) => {
