@@ -1,5 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { Plus, Trash2, Minus } from "lucide-react";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 
 type Course = {
   id: string;
