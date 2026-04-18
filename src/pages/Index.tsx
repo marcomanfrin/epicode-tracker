@@ -234,6 +234,7 @@ const Index = () => {
               </span>
               <span className="flex items-center gap-2">
                 <span className="inline-block h-3 w-3 bg-accent" /> Caricato
+                (non fatto)
               </span>
               <span className="flex items-center gap-2">
                 <span className="inline-block h-3 w-3 border border-foreground/60 bg-background" />
