@@ -157,13 +157,12 @@ const Index = () => {
       </header>
 
       {/* TABLE SECTION */}
-      <section className="container-editorial pb-20">
+      <section className="container-editorial pb-20 overflow-x-auto">
         <div className="hairline" />
-        <div className="grid grid-cols-[1fr_repeat(4,minmax(60px,90px))_36px] md:grid-cols-[2fr_repeat(4,minmax(100px,130px))_56px] items-end gap-3 md:gap-4 py-5">
+        <div className="grid grid-cols-[1fr_repeat(3,minmax(60px,90px))_36px] md:grid-cols-[2fr_repeat(3,minmax(100px,130px))_56px] items-end gap-3 md:gap-4 py-5 min-w-[600px]">
           <span className="label-meta">Corso</span>
           <span className="label-meta text-right">Fatto</span>
           <span className="label-meta text-right">Caricato</span>
-          <span className="label-meta text-right">Da caricare</span>
           <span className="label-meta text-right">Totale</span>
           <span />
         </div>
@@ -180,10 +179,9 @@ const Index = () => {
         )}
 
         {courses.map((c) => {
-          const daCaricare = c.totale - c.caricato;
           return (
             <div key={c.id}>
-              <div className="grid grid-cols-[1fr_repeat(4,minmax(60px,90px))_36px] md:grid-cols-[2fr_repeat(4,minmax(100px,130px))_56px] items-center gap-3 md:gap-4 py-5">
+              <div className="grid grid-cols-[1fr_repeat(3,minmax(60px,90px))_36px] md:grid-cols-[2fr_repeat(3,minmax(100px,130px))_56px] items-center gap-3 md:gap-4 py-5 min-w-[600px]">
                 <div className="font-serif text-2xl md:text-3xl truncate">
                   {c.name}
                 </div>
@@ -203,9 +201,6 @@ const Index = () => {
                   onDec={() => update(c.id, "caricato", -1)}
                 />
 
-                <div className="text-right font-mono text-base md:text-lg tabular-nums text-muted-foreground">
-                  {daCaricare}
-                </div>
                 <div className="text-right font-mono text-lg md:text-xl tabular-nums">
                   {c.totale}
                 </div>
@@ -224,16 +219,13 @@ const Index = () => {
         })}
 
         {/* Totals row */}
-        <div className="grid grid-cols-[1fr_repeat(4,minmax(60px,90px))_36px] md:grid-cols-[2fr_repeat(4,minmax(100px,130px))_56px] items-center gap-3 md:gap-4 py-6">
+        <div className="grid grid-cols-[1fr_repeat(3,minmax(60px,90px))_36px] md:grid-cols-[2fr_repeat(3,minmax(100px,130px))_56px] items-center gap-3 md:gap-4 py-6 min-w-[600px]">
           <span className="label-meta">Totale</span>
           <span className="text-right font-mono text-base md:text-lg tabular-nums">
             {totals.fatto}
           </span>
           <span className="text-right font-mono text-base md:text-lg tabular-nums">
             {totals.caricato}
-          </span>
-          <span className="text-right font-mono text-base md:text-lg tabular-nums text-muted-foreground">
-            {totals.daCaricare}
           </span>
           <span className="text-right font-mono text-xl md:text-2xl font-medium tabular-nums">
             <span className="bg-accent px-2 py-0.5">{totals.totale}</span>
