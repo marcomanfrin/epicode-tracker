@@ -135,7 +135,7 @@ const Index = () => {
       {/* HERO */}
       <header className="container-editorial pt-16 pb-12 md:pt-24 md:pb-20">
         <div className="flex items-center justify-between mb-10">
-          <span className="label-meta">Course Tracker / 2025</span>
+          <span className="label-meta">Course Tracker</span>
           <span className="label-meta hidden sm:inline">
             {courses.length.toString().padStart(2, "0")} corsi
           </span>
