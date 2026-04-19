@@ -70,7 +70,9 @@ export const CourseTree = ({ course, mode }: Props) => {
         <div className="pl-1 pt-2">
           <QuickAddInput
             placeholder="Aggiungi modulo…"
-            onAdd={(name) => createModule(course.id, name, nextModPos)}
+            onAdd={async (name) => {
+              await createModule(course.id, name, nextModPos);
+            }}
           />
         </div>
       )}
@@ -164,7 +166,9 @@ const ModuleRow = ({
               <QuickAddInput
                 size="sm"
                 placeholder="Aggiungi sottomodulo…"
-                onAdd={(name) => createSubmodule(module.id, name, nextSubPos)}
+                onAdd={async (name) => {
+                  await createSubmodule(module.id, name, nextSubPos);
+                }}
               />
             </div>
           )}
