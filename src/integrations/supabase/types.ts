@@ -16,36 +16,138 @@ export type Database = {
     Tables: {
       courses: {
         Row: {
-          caricato: number
           created_at: string
-          fatto: number
           id: string
           name: string
           position: number
-          totale: number
           updated_at: string
         }
         Insert: {
-          caricato?: number
           created_at?: string
-          fatto?: number
           id?: string
           name: string
           position?: number
-          totale: number
           updated_at?: string
         }
         Update: {
-          caricato?: number
           created_at?: string
-          fatto?: number
           id?: string
           name?: string
           position?: number
-          totale?: number
           updated_at?: string
         }
         Relationships: []
+      }
+      lessons: {
+        Row: {
+          created_at: string
+          fatto: boolean
+          id: string
+          name: string
+          position: number
+          submodule_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          fatto?: boolean
+          id?: string
+          name: string
+          position?: number
+          submodule_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          fatto?: boolean
+          id?: string
+          name?: string
+          position?: number
+          submodule_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lessons_submodule_id_fkey"
+            columns: ["submodule_id"]
+            isOneToOne: false
+            referencedRelation: "submodules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      modules: {
+        Row: {
+          caricato: boolean
+          course_id: string
+          created_at: string
+          id: string
+          name: string
+          position: number
+          updated_at: string
+        }
+        Insert: {
+          caricato?: boolean
+          course_id: string
+          created_at?: string
+          id?: string
+          name: string
+          position?: number
+          updated_at?: string
+        }
+        Update: {
+          caricato?: boolean
+          course_id?: string
+          created_at?: string
+          id?: string
+          name?: string
+          position?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "modules_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      submodules: {
+        Row: {
+          created_at: string
+          id: string
+          module_id: string
+          name: string
+          position: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          module_id: string
+          name: string
+          position?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          module_id?: string
+          name?: string
+          position?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "submodules_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "modules"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
