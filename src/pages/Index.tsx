@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Trash2, Minus } from "lucide-react";
+import { Plus, BookOpen, Pencil } from "lucide-react";
 import {
   Bar,
   BarChart,
@@ -11,46 +11,51 @@ import {
 } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { type Course, computeStats } from "@/types/course";
+import { fetchAllCourses, createCourse } from "@/lib/courseApi";
+import { CourseCard } from "@/components/course/CourseCard";
 
-type Course = {
-  id: string;
-  name: string;
-  totale: number;
-  fatto: number;
-  caricato: number;
-  position: number;
-};
-
-type EditableKey = "fatto" | "caricato";
+type Mode = "study" | "edit";
 
 const Index = () => {
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
+  const [mode, setMode] = useState<Mode>("study");
   const [newName, setNewName] = useState("");
-  const [newTot, setNewTot] = useState<string>("");
 
-  // Initial load + realtime sync
   useEffect(() => {
     const load = async () => {
-      const { data, error } = await supabase
-        .from("courses")
-        .select("*")
-        .order("position", { ascending: true })
-        .order("created_at", { ascending: true });
-      if (error) {
-        toast.error("Errore nel caricamento: " + error.message);
-      } else {
-        setCourses(data ?? []);
+      try {
+        const data = await fetchAllCourses();
+        setCourses(data);
+      } catch (e: any) {
+        toast.error("Errore nel caricamento: " + e.message);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
     load();
 
     const channel = supabase
-      .channel("courses-changes")
+      .channel("course-tree-changes")
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "courses" },
+        () => load(),
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "modules" },
+        () => load(),
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "submodules" },
+        () => load(),
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "lessons" },
         () => load(),
       )
       .subscribe();
@@ -60,80 +65,39 @@ const Index = () => {
     };
   }, []);
 
-  const totals = useMemo(() => {
-    const fatto = courses.reduce((s, c) => s + c.fatto, 0);
-    const caricato = courses.reduce((s, c) => s + c.caricato, 0);
-    const totale = courses.reduce((s, c) => s + c.totale, 0);
-    return { fatto, caricato, daCaricare: totale - caricato, totale };
-  }, [courses]);
+  const chartData = useMemo(
+    () =>
+      courses.map((c) => {
+        const s = computeStats(c);
+        return {
+          name: c.name,
+          Fatto: s.doneLessons,
+          "Caricato (non fatto)": Math.max(0, s.loadedLessons - s.doneLessons),
+          "Da caricare": Math.max(0, s.totalLessons - s.loadedLessons),
+        };
+      }),
+    [courses],
+  );
 
-  // Vincoli: caricato ≤ totale, fatto ≤ caricato
-  const clamp = (c: Course, key: EditableKey, value: number): Course => {
-    const next = Math.max(0, isNaN(value) ? 0 : value);
-    if (key === "caricato") {
-      const caricato = Math.min(next, c.totale);
-      const fatto = Math.min(c.fatto, caricato);
-      return { ...c, caricato, fatto };
-    }
-    return { ...c, fatto: Math.min(next, c.caricato) };
-  };
-
-  const persist = async (c: Course) => {
-    const { error } = await supabase
-      .from("courses")
-      .update({ fatto: c.fatto, caricato: c.caricato })
-      .eq("id", c.id);
-    if (error) toast.error("Errore di salvataggio: " + error.message);
-  };
-
-  const applyChange = (id: string, key: EditableKey, compute: (c: Course) => number) => {
-    const current = courses.find((c) => c.id === id);
-    if (!current) return;
-    const updated = clamp(current, key, compute(current));
-    // Optimistic update
-    setCourses((prev) => prev.map((c) => (c.id === id ? updated : c)));
-    persist(updated);
-  };
-
-  const update = (id: string, key: EditableKey, delta: number) =>
-    applyChange(id, key, (c) => c[key] + delta);
-
-  const setValue = (id: string, key: EditableKey, value: number) =>
-    applyChange(id, key, () => value);
-
-  const remove = async (id: string) => {
-    const prev = courses;
-    setCourses((p) => p.filter((c) => c.id !== id));
-    const { error } = await supabase.from("courses").delete().eq("id", id);
-    if (error) {
-      toast.error("Errore: " + error.message);
-      setCourses(prev);
-    }
-  };
-
-  const add = async (e: React.FormEvent) => {
+  const addCourse = async (e: React.FormEvent) => {
     e.preventDefault();
     const name = newName.trim();
-    const totale = parseInt(newTot, 10);
-    if (!name || isNaN(totale) || totale < 1) return;
+    if (!name) return;
     const position = courses.length
       ? Math.max(...courses.map((c) => c.position)) + 1
       : 0;
-    const { error } = await supabase
-      .from("courses")
-      .insert({ name, totale, fatto: 0, caricato: 0, position });
-    if (error) {
-      toast.error("Errore: " + error.message);
-      return;
+    try {
+      await createCourse(name, position);
+      setNewName("");
+    } catch (e: any) {
+      toast.error("Errore: " + e.message);
     }
-    setNewName("");
-    setNewTot("");
   };
 
   return (
     <main className="min-h-screen bg-background text-foreground">
       {/* HERO */}
-      <header className="container-editorial pt-16 pb-12 md:pt-24 md:pb-20">
+      <header className="container-editorial pt-16 pb-10 md:pt-24 md:pb-14">
         <div className="flex items-center justify-between mb-10">
           <span className="label-meta">Course Tracker</span>
           <span className="label-meta hidden sm:inline">
@@ -151,90 +115,58 @@ const Index = () => {
           .
         </h1>
         <p className="mt-6 max-w-xl text-base md:text-lg text-muted-foreground font-sans">
-          Imposta il totale di moduli all'inizio del corso, poi aggiorna man
-          mano quanti hai <em>caricato</em> e quanti hai <em>fatto</em>.
+          Organizza ogni corso in moduli, sottomoduli e lezioni. Spunta le
+          lezioni completate e segna i moduli caricati sulla piattaforma.
         </p>
       </header>
 
-      {/* TABLE SECTION */}
-      <section className="container-editorial pb-20 overflow-x-auto">
-        <div className="hairline" />
-        <div className="grid grid-cols-[1fr_repeat(3,minmax(60px,90px))_36px] md:grid-cols-[2fr_repeat(3,minmax(100px,130px))_56px] items-end gap-3 md:gap-4 py-5 min-w-[600px]">
-          <span className="label-meta">Corso</span>
-          <span className="label-meta text-right">Fatto</span>
-          <span className="label-meta text-right">Caricato</span>
-          <span className="label-meta text-right">Totale</span>
-          <span />
+      {/* MODE TOGGLE */}
+      <section className="container-editorial">
+        <div className="flex items-center justify-between border-y border-border py-3">
+          <span className="label-meta">Modalità</span>
+          <div className="inline-flex border border-border">
+            <button
+              onClick={() => setMode("study")}
+              className={`flex items-center gap-2 px-4 py-2 font-mono text-xs uppercase tracking-wider transition-colors ${
+                mode === "study"
+                  ? "bg-foreground text-background"
+                  : "hover:bg-secondary"
+              }`}
+            >
+              <BookOpen className="h-3.5 w-3.5" /> Studio
+            </button>
+            <button
+              onClick={() => setMode("edit")}
+              className={`flex items-center gap-2 px-4 py-2 font-mono text-xs uppercase tracking-wider border-l border-border transition-colors ${
+                mode === "edit"
+                  ? "bg-foreground text-background"
+                  : "hover:bg-secondary"
+              }`}
+            >
+              <Pencil className="h-3.5 w-3.5" /> Modifica struttura
+            </button>
+          </div>
         </div>
-        <div className="hairline" />
+      </section>
 
+      {/* COURSES */}
+      <section className="container-editorial pb-16">
         {loading && (
           <div className="py-10 text-center label-meta">Caricamento…</div>
         )}
-
         {!loading && courses.length === 0 && (
-          <div className="py-10 text-center text-muted-foreground font-sans">
-            Nessun corso. Aggiungine uno qui sotto.
+          <div className="py-16 text-center text-muted-foreground font-sans">
+            Nessun corso. Aggiungine uno nella sezione qui sotto.
           </div>
         )}
+        {courses.map((c) => (
+          <CourseCard key={c.id} course={c} mode={mode} />
+        ))}
+      </section>
 
-        {courses.map((c) => {
-          return (
-            <div key={c.id}>
-              <div className="grid grid-cols-[1fr_repeat(3,minmax(60px,90px))_36px] md:grid-cols-[2fr_repeat(3,minmax(100px,130px))_56px] items-center gap-3 md:gap-4 py-5 min-w-[600px]">
-                <div className="font-serif text-2xl md:text-3xl truncate">
-                  {c.name}
-                </div>
-
-                <Stepper
-                  value={c.fatto}
-                  max={c.caricato}
-                  onChange={(v) => setValue(c.id, "fatto", v)}
-                  onInc={() => update(c.id, "fatto", 1)}
-                  onDec={() => update(c.id, "fatto", -1)}
-                />
-                <Stepper
-                  value={c.caricato}
-                  max={c.totale}
-                  onChange={(v) => setValue(c.id, "caricato", v)}
-                  onInc={() => update(c.id, "caricato", 1)}
-                  onDec={() => update(c.id, "caricato", -1)}
-                />
-
-                <div className="text-right font-mono text-lg md:text-xl tabular-nums">
-                  {c.totale}
-                </div>
-
-                <button
-                  onClick={() => remove(c.id)}
-                  aria-label={`Rimuovi ${c.name}`}
-                  className="justify-self-end text-muted-foreground hover:text-destructive transition-colors p-2"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </div>
-              <div className="hairline" />
-            </div>
-          );
-        })}
-
-        {/* Totals row */}
-        <div className="grid grid-cols-[1fr_repeat(3,minmax(60px,90px))_36px] md:grid-cols-[2fr_repeat(3,minmax(100px,130px))_56px] items-center gap-3 md:gap-4 py-6 min-w-[600px]">
-          <span className="label-meta">Totale</span>
-          <span className="text-right font-mono text-base md:text-lg tabular-nums">
-            {totals.fatto}
-          </span>
-          <span className="text-right font-mono text-base md:text-lg tabular-nums">
-            {totals.caricato}
-          </span>
-          <span className="text-right font-mono text-xl md:text-2xl font-medium tabular-nums">
-            <span className="bg-accent px-2 py-0.5">{totals.totale}</span>
-          </span>
-          <span />
-        </div>
-
-        {/* CHART */}
-        <div className="mt-16">
+      {/* CHART */}
+      {courses.length > 0 && (
+        <section className="container-editorial pb-20">
           <div className="flex flex-wrap items-baseline justify-between gap-4 mb-6">
             <div>
               <span className="label-meta">Andamento</span>
@@ -260,12 +192,7 @@ const Index = () => {
           <div className="h-[320px] md:h-[380px] w-full mt-6">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
-                data={courses.map((c) => ({
-                  name: c.name,
-                  Fatto: c.fatto,
-                  "Caricato (non fatto)": Math.max(0, c.caricato - c.fatto),
-                  "Da caricare": Math.max(0, c.totale - c.caricato),
-                }))}
+                data={chartData}
                 margin={{ top: 8, right: 8, left: -16, bottom: 0 }}
               >
                 <CartesianGrid
@@ -323,15 +250,18 @@ const Index = () => {
               </BarChart>
             </ResponsiveContainer>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
-      {/* DARK SECTION — add form */}
+      {/* DARK SECTION — add course */}
       <section className="bg-surface-dark text-surface-dark-foreground">
         <div className="container-editorial py-16 md:py-24">
           <div className="grid md:grid-cols-[1fr_1fr] gap-10 items-end">
             <div>
-              <span className="label-meta" style={{ color: "hsl(var(--accent))" }}>
+              <span
+                className="label-meta"
+                style={{ color: "hsl(var(--accent))" }}
+              >
                 Nuovo corso
               </span>
               <h2 className="font-serif text-4xl md:text-5xl mt-3 leading-tight">
@@ -339,23 +269,16 @@ const Index = () => {
                 <span className="italic text-accent">alla lista</span>.
               </h2>
               <p className="mt-4 text-surface-dark-foreground/60 font-sans">
-                Indica nome e numero totale di moduli previsti.
+                Basta il nome. Aggiungi moduli, sottomoduli e lezioni dalla
+                modalità "Modifica struttura".
               </p>
             </div>
-            <form onSubmit={add} className="flex flex-col sm:flex-row gap-3">
+            <form onSubmit={addCourse} className="flex flex-col sm:flex-row gap-3">
               <input
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
                 placeholder="Nome corso"
                 className="flex-1 bg-transparent border-b border-surface-dark-foreground/40 focus:border-accent outline-none py-3 font-sans text-lg placeholder:text-surface-dark-foreground/40"
-              />
-              <input
-                type="number"
-                min={1}
-                value={newTot}
-                onChange={(e) => setNewTot(e.target.value)}
-                placeholder="Tot."
-                className="w-full sm:w-24 bg-transparent border-b border-surface-dark-foreground/40 focus:border-accent outline-none py-3 font-mono text-lg placeholder:text-surface-dark-foreground/40 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               />
               <button
                 type="submit"
@@ -376,51 +299,6 @@ const Index = () => {
         </p>
       </footer>
     </main>
-  );
-};
-
-const Stepper = ({
-  value,
-  max,
-  onChange,
-  onInc,
-  onDec,
-}: {
-  value: number;
-  max: number;
-  onChange: (v: number) => void;
-  onInc: () => void;
-  onDec: () => void;
-}) => {
-  const atMax = value >= max;
-  const atMin = value <= 0;
-  return (
-    <div className="flex items-center justify-end gap-1">
-      <button
-        onClick={onDec}
-        disabled={atMin}
-        aria-label="Diminuisci"
-        className="text-muted-foreground hover:text-foreground p-1 transition-colors disabled:opacity-20 disabled:hover:text-muted-foreground"
-      >
-        <Minus className="h-3.5 w-3.5" />
-      </button>
-      <input
-        type="number"
-        min={0}
-        max={max}
-        value={value}
-        onChange={(e) => onChange(parseInt(e.target.value, 10))}
-        className="w-10 md:w-14 bg-transparent text-right font-mono text-lg md:text-xl tabular-nums outline-none focus:bg-secondary px-1 py-0.5 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-      />
-      <button
-        onClick={onInc}
-        disabled={atMax}
-        aria-label="Aumenta"
-        className="text-muted-foreground hover:text-primary p-1 transition-colors disabled:opacity-20 disabled:hover:text-muted-foreground"
-      >
-        <Plus className="h-3.5 w-3.5" />
-      </button>
-    </div>
   );
 };
 
