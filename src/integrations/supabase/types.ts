@@ -32,7 +32,7 @@ export type Database = {
           id?: string
           name: string
           position?: number
-          totale: number
+          totale?: number
           updated_at?: string
         }
         Update: {
