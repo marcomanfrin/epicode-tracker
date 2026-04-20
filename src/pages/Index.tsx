@@ -170,87 +170,178 @@ const Index = () => {
 
       {/* TABLE SECTION */}
       <section className="container-editorial pb-20">
-        <div className="hairline" />
-        <div className="grid grid-cols-[1fr_repeat(4,minmax(60px,90px))_36px] md:grid-cols-[2fr_repeat(4,minmax(100px,130px))_56px] items-end gap-3 md:gap-4 py-5">
-          <span className="label-meta">Corso</span>
-          <span className="label-meta text-right">Fatto</span>
-          <span className="label-meta text-right">Caricato</span>
-          <span className="label-meta text-right">Da caricare</span>
-          <span className="label-meta text-right">Totale</span>
-          <span />
-        </div>
-        <div className="hairline" />
-
         {loading && (
-          <div className="py-10 text-center label-meta">Caricamento…</div>
+          <>
+            <div className="hairline" />
+            <div className="py-10 text-center label-meta">Caricamento…</div>
+            <div className="hairline" />
+          </>
         )}
 
         {!loading && courses.length === 0 && (
-          <div className="py-10 text-center text-muted-foreground font-sans">
-            Nessun corso. Aggiungine uno qui sotto.
+          <>
+            <div className="hairline" />
+            <div className="py-10 text-center text-muted-foreground font-sans">
+              Nessun corso. Aggiungine uno qui sotto.
+            </div>
+            <div className="hairline" />
+          </>
+        )}
+
+        {/* MOBILE LAYOUT — card per corso */}
+        {!loading && courses.length > 0 && (
+          <div className="md:hidden">
+            <div className="hairline" />
+            {courses.map((c) => {
+              const daCaricare = c.totale - c.caricato;
+              return (
+                <div key={c.id} className="py-5">
+                  <div className="flex items-baseline justify-between gap-3 mb-4">
+                    <h3 className="font-serif text-2xl truncate flex-1">{c.name}</h3>
+                    <div className="flex items-baseline gap-2 shrink-0">
+                      <span className="font-mono text-lg tabular-nums bg-accent px-2 py-0.5">
+                        {c.totale}
+                      </span>
+                      <button
+                        onClick={() => remove(c.id)}
+                        aria-label={`Rimuovi ${c.name}`}
+                        className="text-muted-foreground hover:text-destructive transition-colors p-1"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div>
+                      <span className="label-meta block mb-1.5">Fatto</span>
+                      <Stepper
+                        value={c.fatto}
+                        max={c.caricato}
+                        align="left"
+                        onChange={(v) => setValue(c.id, "fatto", v)}
+                        onInc={() => update(c.id, "fatto", 1)}
+                        onDec={() => update(c.id, "fatto", -1)}
+                      />
+                    </div>
+                    <div>
+                      <span className="label-meta block mb-1.5">Caricato</span>
+                      <Stepper
+                        value={c.caricato}
+                        max={c.totale}
+                        align="left"
+                        onChange={(v) => setValue(c.id, "caricato", v)}
+                        onInc={() => update(c.id, "caricato", 1)}
+                        onDec={() => update(c.id, "caricato", -1)}
+                      />
+                    </div>
+                    <div>
+                      <span className="label-meta block mb-1.5">Da caricare</span>
+                      <div className="font-mono text-lg tabular-nums text-muted-foreground py-1 px-1">
+                        {daCaricare}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="hairline mt-5" />
+                </div>
+              );
+            })}
+            {/* Mobile totals */}
+            <div className="py-5">
+              <div className="flex items-baseline justify-between mb-3">
+                <span className="label-meta">Totale</span>
+                <span className="font-mono text-xl font-medium tabular-nums bg-accent px-2 py-0.5">
+                  {totals.totale}
+                </span>
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <span className="label-meta block mb-1">Fatto</span>
+                  <span className="font-mono text-lg tabular-nums">{totals.fatto}</span>
+                </div>
+                <div>
+                  <span className="label-meta block mb-1">Caricato</span>
+                  <span className="font-mono text-lg tabular-nums">{totals.caricato}</span>
+                </div>
+                <div>
+                  <span className="label-meta block mb-1">Da caricare</span>
+                  <span className="font-mono text-lg tabular-nums text-muted-foreground">
+                    {totals.daCaricare}
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
-        {courses.map((c) => {
-          const daCaricare = c.totale - c.caricato;
-          return (
-            <div key={c.id}>
-              <div className="grid grid-cols-[1fr_repeat(4,minmax(60px,90px))_36px] md:grid-cols-[2fr_repeat(4,minmax(100px,130px))_56px] items-center gap-3 md:gap-4 py-5">
-                <div className="font-serif text-2xl md:text-3xl truncate">
-                  {c.name}
-                </div>
+        {/* DESKTOP LAYOUT — tabella */}
+        <div className="hidden md:block">
+          <div className="hairline" />
+          <div className="grid grid-cols-[2fr_repeat(4,minmax(100px,130px))_56px] items-end gap-4 py-5">
+            <span className="label-meta">Corso</span>
+            <span className="label-meta text-right">Fatto</span>
+            <span className="label-meta text-right">Caricato</span>
+            <span className="label-meta text-right">Da caricare</span>
+            <span className="label-meta text-right">Totale</span>
+            <span />
+          </div>
+          <div className="hairline" />
 
-                <Stepper
-                  value={c.fatto}
-                  max={c.caricato}
-                  onChange={(v) => setValue(c.id, "fatto", v)}
-                  onInc={() => update(c.id, "fatto", 1)}
-                  onDec={() => update(c.id, "fatto", -1)}
-                />
-                <Stepper
-                  value={c.caricato}
-                  max={c.totale}
-                  onChange={(v) => setValue(c.id, "caricato", v)}
-                  onInc={() => update(c.id, "caricato", 1)}
-                  onDec={() => update(c.id, "caricato", -1)}
-                />
-
-                <div className="text-right font-mono text-base md:text-lg tabular-nums text-muted-foreground">
-                  {daCaricare}
+          {courses.map((c) => {
+            const daCaricare = c.totale - c.caricato;
+            return (
+              <div key={c.id}>
+                <div className="grid grid-cols-[2fr_repeat(4,minmax(100px,130px))_56px] items-center gap-4 py-5">
+                  <div className="font-serif text-3xl truncate">{c.name}</div>
+                  <Stepper
+                    value={c.fatto}
+                    max={c.caricato}
+                    onChange={(v) => setValue(c.id, "fatto", v)}
+                    onInc={() => update(c.id, "fatto", 1)}
+                    onDec={() => update(c.id, "fatto", -1)}
+                  />
+                  <Stepper
+                    value={c.caricato}
+                    max={c.totale}
+                    onChange={(v) => setValue(c.id, "caricato", v)}
+                    onInc={() => update(c.id, "caricato", 1)}
+                    onDec={() => update(c.id, "caricato", -1)}
+                  />
+                  <div className="text-right font-mono text-lg tabular-nums text-muted-foreground">
+                    {daCaricare}
+                  </div>
+                  <div className="text-right font-mono text-xl tabular-nums">
+                    {c.totale}
+                  </div>
+                  <button
+                    onClick={() => remove(c.id)}
+                    aria-label={`Rimuovi ${c.name}`}
+                    className="justify-self-end text-muted-foreground hover:text-destructive transition-colors p-2"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
                 </div>
-                <div className="text-right font-mono text-lg md:text-xl tabular-nums">
-                  {c.totale}
-                </div>
-
-                <button
-                  onClick={() => remove(c.id)}
-                  aria-label={`Rimuovi ${c.name}`}
-                  className="justify-self-end text-muted-foreground hover:text-destructive transition-colors p-2"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
+                <div className="hairline" />
               </div>
-              <div className="hairline" />
-            </div>
-          );
-        })}
+            );
+          })}
 
-        {/* Totals row */}
-        <div className="grid grid-cols-[1fr_repeat(4,minmax(60px,90px))_36px] md:grid-cols-[2fr_repeat(4,minmax(100px,130px))_56px] items-center gap-3 md:gap-4 py-6">
-          <span className="label-meta">Totale</span>
-          <span className="text-right font-mono text-base md:text-lg tabular-nums">
-            {totals.fatto}
-          </span>
-          <span className="text-right font-mono text-base md:text-lg tabular-nums">
-            {totals.caricato}
-          </span>
-          <span className="text-right font-mono text-base md:text-lg tabular-nums text-muted-foreground">
-            {totals.daCaricare}
-          </span>
-          <span className="text-right font-mono text-xl md:text-2xl font-medium tabular-nums">
-            <span className="bg-accent px-2 py-0.5">{totals.totale}</span>
-          </span>
-          <span />
+          {/* Desktop totals row */}
+          <div className="grid grid-cols-[2fr_repeat(4,minmax(100px,130px))_56px] items-center gap-4 py-6">
+            <span className="label-meta">Totale</span>
+            <span className="text-right font-mono text-lg tabular-nums">
+              {totals.fatto}
+            </span>
+            <span className="text-right font-mono text-lg tabular-nums">
+              {totals.caricato}
+            </span>
+            <span className="text-right font-mono text-lg tabular-nums text-muted-foreground">
+              {totals.daCaricare}
+            </span>
+            <span className="text-right font-mono text-2xl font-medium tabular-nums">
+              <span className="bg-accent px-2 py-0.5">{totals.totale}</span>
+            </span>
+            <span />
+          </div>
         </div>
 
         {/* CHART */}
@@ -405,17 +496,19 @@ const Stepper = ({
   onChange,
   onInc,
   onDec,
+  align = "right",
 }: {
   value: number;
   max: number;
   onChange: (v: number) => void;
   onInc: () => void;
   onDec: () => void;
+  align?: "left" | "right";
 }) => {
   const atMax = value >= max;
   const atMin = value <= 0;
   return (
-    <div className="flex items-center justify-end gap-1">
+    <div className={`flex items-center gap-1 ${align === "right" ? "justify-end" : "justify-start"}`}>
       <button
         onClick={onDec}
         disabled={atMin}
@@ -430,7 +523,7 @@ const Stepper = ({
         max={max}
         value={value}
         onChange={(e) => onChange(parseInt(e.target.value, 10))}
-        className="w-10 md:w-14 bg-transparent text-right font-mono text-lg md:text-xl tabular-nums outline-none focus:bg-secondary px-1 py-0.5 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+        className={`w-10 md:w-14 bg-transparent ${align === "right" ? "text-right" : "text-left"} font-mono text-lg md:text-xl tabular-nums outline-none focus:bg-secondary px-1 py-0.5 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
       />
       <button
         onClick={onInc}
