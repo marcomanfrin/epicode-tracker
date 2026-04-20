@@ -24,6 +24,7 @@ export type Database = {
           position: number
           totale: number
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           caricato?: number
@@ -34,6 +35,7 @@ export type Database = {
           position?: number
           totale?: number
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           caricato?: number
@@ -44,6 +46,7 @@ export type Database = {
           position?: number
           totale?: number
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
