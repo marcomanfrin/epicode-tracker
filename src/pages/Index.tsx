@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { LogOut, Plus, Trash2, Minus } from "lucide-react";
+import { LogOut, Plus, Trash2, Minus, GripVertical } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import {
   Bar,
@@ -10,6 +10,23 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -69,7 +86,6 @@ const Index = () => {
     return { fatto, caricato, daCaricare: totale - caricato, totale };
   }, [courses]);
 
-  // Vincoli: caricato ≤ totale, fatto ≤ caricato
   const clamp = (c: Course, key: EditableKey, value: number): Course => {
     const next = Math.max(0, isNaN(value) ? 0 : value);
     if (key === "caricato") {
@@ -92,7 +108,6 @@ const Index = () => {
     const current = courses.find((c) => c.id === id);
     if (!current) return;
     const updated = clamp(current, key, compute(current));
-    // Optimistic update
     setCourses((prev) => prev.map((c) => (c.id === id ? updated : c)));
     persist(updated);
   };
@@ -132,6 +147,38 @@ const Index = () => {
     setNewName("");
     setNewTot("");
   };
+
+  // Drag & drop
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = courses.findIndex((c) => c.id === active.id);
+    const newIndex = courses.findIndex((c) => c.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+    const reordered = arrayMove(courses, oldIndex, newIndex).map((c, i) => ({
+      ...c,
+      position: i,
+    }));
+    const prev = courses;
+    setCourses(reordered);
+    const updates = await Promise.all(
+      reordered.map((c) =>
+        supabase.from("courses").update({ position: c.position }).eq("id", c.id),
+      ),
+    );
+    const failed = updates.find((u) => u.error);
+    if (failed) {
+      toast.error("Errore nel riordino: " + failed.error!.message);
+      setCourses(prev);
+    }
+  };
+
+  const courseIds = useMemo(() => courses.map((c) => c.id), [courses]);
 
   return (
     <main className="min-h-screen bg-background text-foreground">
@@ -188,161 +235,98 @@ const Index = () => {
           </>
         )}
 
-        {/* MOBILE LAYOUT — card per corso */}
         {!loading && courses.length > 0 && (
-          <div className="md:hidden">
-            <div className="hairline" />
-            {courses.map((c) => {
-              const daCaricare = c.totale - c.caricato;
-              return (
-                <div key={c.id} className="py-5">
-                  <div className="flex items-baseline justify-between gap-3 mb-4">
-                    <h3 className="font-serif text-2xl truncate flex-1">{c.name}</h3>
-                    <div className="flex items-baseline gap-2 shrink-0">
-                      <span className="font-mono text-lg tabular-nums bg-accent px-2 py-0.5">
-                        {c.totale}
-                      </span>
-                      <button
-                        onClick={() => remove(c.id)}
-                        aria-label={`Rimuovi ${c.name}`}
-                        className="text-muted-foreground hover:text-destructive transition-colors p-1"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext items={courseIds} strategy={verticalListSortingStrategy}>
+              {/* MOBILE LAYOUT */}
+              <div className="md:hidden">
+                <div className="hairline" />
+                {courses.map((c) => (
+                  <SortableCourseCard
+                    key={c.id}
+                    course={c}
+                    onRemove={remove}
+                    onSetValue={setValue}
+                    onUpdate={update}
+                  />
+                ))}
+                {/* Mobile totals */}
+                <div className="py-5">
+                  <div className="flex items-baseline justify-between mb-3">
+                    <span className="label-meta">Totale</span>
+                    <span className="font-mono text-xl font-medium tabular-nums bg-accent px-2 py-0.5">
+                      {totals.totale}
+                    </span>
                   </div>
                   <div className="grid grid-cols-3 gap-3">
                     <div>
-                      <span className="label-meta block mb-1.5">Fatto</span>
-                      <Stepper
-                        value={c.fatto}
-                        max={c.caricato}
-                        align="left"
-                        onChange={(v) => setValue(c.id, "fatto", v)}
-                        onInc={() => update(c.id, "fatto", 1)}
-                        onDec={() => update(c.id, "fatto", -1)}
-                      />
+                      <span className="label-meta block mb-1">Fatto</span>
+                      <span className="font-mono text-lg tabular-nums">{totals.fatto}</span>
                     </div>
                     <div>
-                      <span className="label-meta block mb-1.5">Caricato</span>
-                      <Stepper
-                        value={c.caricato}
-                        max={c.totale}
-                        align="left"
-                        onChange={(v) => setValue(c.id, "caricato", v)}
-                        onInc={() => update(c.id, "caricato", 1)}
-                        onDec={() => update(c.id, "caricato", -1)}
-                      />
+                      <span className="label-meta block mb-1">Caricato</span>
+                      <span className="font-mono text-lg tabular-nums">{totals.caricato}</span>
                     </div>
                     <div>
-                      <span className="label-meta block mb-1.5">Da caricare</span>
-                      <div className="font-mono text-lg tabular-nums text-muted-foreground py-1 px-1">
-                        {daCaricare}
-                      </div>
+                      <span className="label-meta block mb-1">Da caricare</span>
+                      <span className="font-mono text-lg tabular-nums text-muted-foreground">
+                        {totals.daCaricare}
+                      </span>
                     </div>
                   </div>
-                  <div className="hairline mt-5" />
-                </div>
-              );
-            })}
-            {/* Mobile totals */}
-            <div className="py-5">
-              <div className="flex items-baseline justify-between mb-3">
-                <span className="label-meta">Totale</span>
-                <span className="font-mono text-xl font-medium tabular-nums bg-accent px-2 py-0.5">
-                  {totals.totale}
-                </span>
-              </div>
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <span className="label-meta block mb-1">Fatto</span>
-                  <span className="font-mono text-lg tabular-nums">{totals.fatto}</span>
-                </div>
-                <div>
-                  <span className="label-meta block mb-1">Caricato</span>
-                  <span className="font-mono text-lg tabular-nums">{totals.caricato}</span>
-                </div>
-                <div>
-                  <span className="label-meta block mb-1">Da caricare</span>
-                  <span className="font-mono text-lg tabular-nums text-muted-foreground">
-                    {totals.daCaricare}
-                  </span>
                 </div>
               </div>
-            </div>
-          </div>
-        )}
 
-        {/* DESKTOP LAYOUT — tabella */}
-        <div className="hidden md:block">
-          <div className="hairline" />
-          <div className="grid grid-cols-[2fr_repeat(4,minmax(100px,130px))_56px] items-end gap-4 py-5">
-            <span className="label-meta">Corso</span>
-            <span className="label-meta text-right">Fatto</span>
-            <span className="label-meta text-right">Caricato</span>
-            <span className="label-meta text-right">Da caricare</span>
-            <span className="label-meta text-right">Totale</span>
-            <span />
-          </div>
-          <div className="hairline" />
-
-          {courses.map((c) => {
-            const daCaricare = c.totale - c.caricato;
-            return (
-              <div key={c.id}>
-                <div className="grid grid-cols-[2fr_repeat(4,minmax(100px,130px))_56px] items-center gap-4 py-5">
-                  <div className="font-serif text-3xl truncate">{c.name}</div>
-                  <Stepper
-                    value={c.fatto}
-                    max={c.caricato}
-                    onChange={(v) => setValue(c.id, "fatto", v)}
-                    onInc={() => update(c.id, "fatto", 1)}
-                    onDec={() => update(c.id, "fatto", -1)}
-                  />
-                  <Stepper
-                    value={c.caricato}
-                    max={c.totale}
-                    onChange={(v) => setValue(c.id, "caricato", v)}
-                    onInc={() => update(c.id, "caricato", 1)}
-                    onDec={() => update(c.id, "caricato", -1)}
-                  />
-                  <div className="text-right font-mono text-lg tabular-nums text-muted-foreground">
-                    {daCaricare}
-                  </div>
-                  <div className="text-right font-mono text-xl tabular-nums">
-                    {c.totale}
-                  </div>
-                  <button
-                    onClick={() => remove(c.id)}
-                    aria-label={`Rimuovi ${c.name}`}
-                    className="justify-self-end text-muted-foreground hover:text-destructive transition-colors p-2"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
+              {/* DESKTOP LAYOUT */}
+              <div className="hidden md:block">
+                <div className="hairline" />
+                <div className="grid grid-cols-[24px_2fr_repeat(4,minmax(100px,130px))_56px] items-end gap-4 py-5">
+                  <span />
+                  <span className="label-meta">Corso</span>
+                  <span className="label-meta text-right">Fatto</span>
+                  <span className="label-meta text-right">Caricato</span>
+                  <span className="label-meta text-right">Da caricare</span>
+                  <span className="label-meta text-right">Totale</span>
+                  <span />
                 </div>
                 <div className="hairline" />
-              </div>
-            );
-          })}
 
-          {/* Desktop totals row */}
-          <div className="grid grid-cols-[2fr_repeat(4,minmax(100px,130px))_56px] items-center gap-4 py-6">
-            <span className="label-meta">Totale</span>
-            <span className="text-right font-mono text-lg tabular-nums">
-              {totals.fatto}
-            </span>
-            <span className="text-right font-mono text-lg tabular-nums">
-              {totals.caricato}
-            </span>
-            <span className="text-right font-mono text-lg tabular-nums text-muted-foreground">
-              {totals.daCaricare}
-            </span>
-            <span className="text-right font-mono text-2xl font-medium tabular-nums">
-              <span className="bg-accent px-2 py-0.5">{totals.totale}</span>
-            </span>
-            <span />
-          </div>
-        </div>
+                {courses.map((c) => (
+                  <SortableCourseRow
+                    key={c.id}
+                    course={c}
+                    onRemove={remove}
+                    onSetValue={setValue}
+                    onUpdate={update}
+                  />
+                ))}
+
+                {/* Desktop totals row */}
+                <div className="grid grid-cols-[24px_2fr_repeat(4,minmax(100px,130px))_56px] items-center gap-4 py-6">
+                  <span />
+                  <span className="label-meta">Totale</span>
+                  <span className="text-right font-mono text-lg tabular-nums">
+                    {totals.fatto}
+                  </span>
+                  <span className="text-right font-mono text-lg tabular-nums">
+                    {totals.caricato}
+                  </span>
+                  <span className="text-right font-mono text-lg tabular-nums text-muted-foreground">
+                    {totals.daCaricare}
+                  </span>
+                  <span className="text-right font-mono text-2xl font-medium tabular-nums">
+                    <span className="bg-accent px-2 py-0.5">{totals.totale}</span>
+                  </span>
+                  <span />
+                </div>
+              </div>
+            </SortableContext>
+          </DndContext>
+        )}
 
         {/* CHART */}
         <div className="mt-16">
@@ -487,6 +471,140 @@ const Index = () => {
         </p>
       </footer>
     </main>
+  );
+};
+
+type RowProps = {
+  course: Course;
+  onRemove: (id: string) => void;
+  onSetValue: (id: string, key: EditableKey, value: number) => void;
+  onUpdate: (id: string, key: EditableKey, delta: number) => void;
+};
+
+const SortableCourseRow = ({ course: c, onRemove, onSetValue, onUpdate }: RowProps) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id: c.id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 10 : "auto",
+  } as React.CSSProperties;
+  const daCaricare = c.totale - c.caricato;
+  return (
+    <div ref={setNodeRef} style={style}>
+      <div className="grid grid-cols-[24px_2fr_repeat(4,minmax(100px,130px))_56px] items-center gap-4 py-5 bg-background">
+        <button
+          {...attributes}
+          {...listeners}
+          aria-label={`Trascina ${c.name}`}
+          className="text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing touch-none transition-colors"
+        >
+          <GripVertical className="h-4 w-4" />
+        </button>
+        <div className="font-serif text-3xl truncate">{c.name}</div>
+        <Stepper
+          value={c.fatto}
+          max={c.caricato}
+          onChange={(v) => onSetValue(c.id, "fatto", v)}
+          onInc={() => onUpdate(c.id, "fatto", 1)}
+          onDec={() => onUpdate(c.id, "fatto", -1)}
+        />
+        <Stepper
+          value={c.caricato}
+          max={c.totale}
+          onChange={(v) => onSetValue(c.id, "caricato", v)}
+          onInc={() => onUpdate(c.id, "caricato", 1)}
+          onDec={() => onUpdate(c.id, "caricato", -1)}
+        />
+        <div className="text-right font-mono text-lg tabular-nums text-muted-foreground">
+          {daCaricare}
+        </div>
+        <div className="text-right font-mono text-xl tabular-nums">{c.totale}</div>
+        <button
+          onClick={() => onRemove(c.id)}
+          aria-label={`Rimuovi ${c.name}`}
+          className="justify-self-end text-muted-foreground hover:text-destructive transition-colors p-2"
+        >
+          <Trash2 className="h-4 w-4" />
+        </button>
+      </div>
+      <div className="hairline" />
+    </div>
+  );
+};
+
+const SortableCourseCard = ({ course: c, onRemove, onSetValue, onUpdate }: RowProps) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id: c.id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 10 : "auto",
+  } as React.CSSProperties;
+  const daCaricare = c.totale - c.caricato;
+  return (
+    <div ref={setNodeRef} style={style} className="bg-background">
+      <div className="py-5">
+        <div className="flex items-baseline justify-between gap-3 mb-4">
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            <button
+              {...attributes}
+              {...listeners}
+              aria-label={`Trascina ${c.name}`}
+              className="text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing touch-none transition-colors -ml-1 p-1"
+            >
+              <GripVertical className="h-4 w-4" />
+            </button>
+            <h3 className="font-serif text-2xl truncate flex-1">{c.name}</h3>
+          </div>
+          <div className="flex items-baseline gap-2 shrink-0">
+            <span className="font-mono text-lg tabular-nums bg-accent px-2 py-0.5">
+              {c.totale}
+            </span>
+            <button
+              onClick={() => onRemove(c.id)}
+              aria-label={`Rimuovi ${c.name}`}
+              className="text-muted-foreground hover:text-destructive transition-colors p-1"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+        <div className="grid grid-cols-3 gap-3">
+          <div>
+            <span className="label-meta block mb-1.5">Fatto</span>
+            <Stepper
+              value={c.fatto}
+              max={c.caricato}
+              align="left"
+              onChange={(v) => onSetValue(c.id, "fatto", v)}
+              onInc={() => onUpdate(c.id, "fatto", 1)}
+              onDec={() => onUpdate(c.id, "fatto", -1)}
+            />
+          </div>
+          <div>
+            <span className="label-meta block mb-1.5">Caricato</span>
+            <Stepper
+              value={c.caricato}
+              max={c.totale}
+              align="left"
+              onChange={(v) => onSetValue(c.id, "caricato", v)}
+              onInc={() => onUpdate(c.id, "caricato", 1)}
+              onDec={() => onUpdate(c.id, "caricato", -1)}
+            />
+          </div>
+          <div>
+            <span className="label-meta block mb-1.5">Da caricare</span>
+            <div className="font-mono text-lg tabular-nums text-muted-foreground py-1 px-1">
+              {daCaricare}
+            </div>
+          </div>
+        </div>
+        <div className="hairline mt-5" />
+      </div>
+    </div>
   );
 };
 
