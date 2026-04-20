@@ -496,17 +496,19 @@ const Stepper = ({
   onChange,
   onInc,
   onDec,
+  align = "right",
 }: {
   value: number;
   max: number;
   onChange: (v: number) => void;
   onInc: () => void;
   onDec: () => void;
+  align?: "left" | "right";
 }) => {
   const atMax = value >= max;
   const atMin = value <= 0;
   return (
-    <div className="flex items-center justify-end gap-1">
+    <div className={`flex items-center gap-1 ${align === "right" ? "justify-end" : "justify-start"}`}>
       <button
         onClick={onDec}
         disabled={atMin}
@@ -521,7 +523,7 @@ const Stepper = ({
         max={max}
         value={value}
         onChange={(e) => onChange(parseInt(e.target.value, 10))}
-        className="w-10 md:w-14 bg-transparent text-right font-mono text-lg md:text-xl tabular-nums outline-none focus:bg-secondary px-1 py-0.5 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+        className={`w-10 md:w-14 bg-transparent ${align === "right" ? "text-right" : "text-left"} font-mono text-lg md:text-xl tabular-nums outline-none focus:bg-secondary px-1 py-0.5 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
       />
       <button
         onClick={onInc}
