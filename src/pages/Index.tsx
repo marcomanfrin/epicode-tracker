@@ -80,10 +80,11 @@ const Index = () => {
   }, []);
 
   const totals = useMemo(() => {
-    const fatto = courses.reduce((s, c) => s + c.fatto, 0);
-    const caricato = courses.reduce((s, c) => s + c.caricato, 0);
-    const totale = courses.reduce((s, c) => s + c.totale, 0);
-    return { fatto, caricato, daCaricare: totale - caricato, totale };
+    const round = (n: number) => Math.round(n * 100) / 100;
+    const fatto = round(courses.reduce((s, c) => s + c.fatto, 0));
+    const caricato = round(courses.reduce((s, c) => s + c.caricato, 0));
+    const totale = round(courses.reduce((s, c) => s + c.totale, 0));
+    return { fatto, caricato, daCaricare: round(totale - caricato), totale };
   }, [courses]);
 
   const clamp = (c: Course, key: EditableKey, value: number): Course => {
@@ -131,8 +132,8 @@ const Index = () => {
   const add = async (e: React.FormEvent) => {
     e.preventDefault();
     const name = newName.trim();
-    const totale = parseInt(newTot, 10);
-    if (!name || isNaN(totale) || totale < 1) return;
+    const totale = parseFloat(newTot);
+    if (!name || isNaN(totale) || totale <= 0) return;
     const position = courses.length
       ? Math.max(...courses.map((c) => c.position)) + 1
       : 0;
@@ -379,7 +380,7 @@ const Index = () => {
                   axisLine={{ stroke: "hsl(var(--border))" }}
                 />
                 <YAxis
-                  allowDecimals={false}
+                  allowDecimals={true}
                   tick={{
                     fill: "hsl(var(--muted-foreground))",
                     fontFamily: "var(--font-mono)",
@@ -447,7 +448,8 @@ const Index = () => {
               />
               <input
                 type="number"
-                min={1}
+                min={0.01}
+                step="any"
                 value={newTot}
                 onChange={(e) => setNewTot(e.target.value)}
                 placeholder="Tot."
@@ -640,8 +642,12 @@ const Stepper = ({
         type="number"
         min={0}
         max={max}
+        step="any"
         value={value}
-        onChange={(e) => onChange(parseInt(e.target.value, 10))}
+        onChange={(e) => {
+          const v = parseFloat(e.target.value);
+          onChange(isNaN(v) ? 0 : v);
+        }}
         className={`w-10 md:w-14 bg-transparent text-center font-mono text-lg md:text-xl tabular-nums outline-none focus:bg-secondary px-1 py-0.5 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
       />
       <button
