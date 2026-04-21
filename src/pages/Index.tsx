@@ -210,8 +210,9 @@ const Index = () => {
           .
         </h1>
         <p className="mt-6 max-w-xl text-base md:text-lg text-muted-foreground font-sans">
-          Imposta il totale di moduli all'inizio del corso, poi aggiorna man
-          mano quanti hai <em>caricato</em> e quanti hai <em>fatto</em>.
+          Aggiungi i corsi impostando il numero totale di moduli, poi man mano
+          aggiorna con i moduli che vengono caricati e con i moduli che hai
+          seguito.
         </p>
       </header>
 
