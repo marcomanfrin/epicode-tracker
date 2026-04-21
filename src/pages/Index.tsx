@@ -611,6 +611,11 @@ const SortableCourseCard = ({ course: c, onRemove, onSetValue, onUpdate }: RowPr
   );
 };
 
+const formatNum = (n: number) => {
+  if (Number.isInteger(n)) return String(n);
+  return String(Math.round(n * 100) / 100);
+};
+
 const Stepper = ({
   value,
   max,
@@ -626,8 +631,11 @@ const Stepper = ({
   onDec: () => void;
   align?: "left" | "right";
 }) => {
+  const [draft, setDraft] = useState<string | null>(null);
+  const [focused, setFocused] = useState(false);
   const atMax = value >= max;
   const atMin = value <= 0;
+  const display = focused && draft !== null ? draft : formatNum(value);
   return (
     <div className={`flex items-center gap-1 ${align === "right" ? "justify-end" : "justify-start"}`}>
       <button
@@ -639,16 +647,30 @@ const Stepper = ({
         <Minus className="h-3.5 w-3.5" />
       </button>
       <input
-        type="number"
-        min={0}
-        max={max}
-        step="any"
-        value={value}
-        onChange={(e) => {
-          const v = parseFloat(e.target.value);
-          onChange(isNaN(v) ? 0 : v);
+        type="text"
+        inputMode="decimal"
+        value={display}
+        onFocus={() => {
+          setFocused(true);
+          setDraft(formatNum(value));
         }}
-        className={`w-10 md:w-14 bg-transparent text-center font-mono text-lg md:text-xl tabular-nums outline-none focus:bg-secondary px-1 py-0.5 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
+        onBlur={() => {
+          setFocused(false);
+          setDraft(null);
+        }}
+        onChange={(e) => {
+          // Accetta cifre con . o , come separatore decimale
+          const raw = e.target.value.replace(",", ".");
+          if (raw !== "" && !/^\d*\.?\d*$/.test(raw)) return;
+          setDraft(raw);
+          if (raw === "" || raw === ".") {
+            onChange(0);
+            return;
+          }
+          const v = parseFloat(raw);
+          if (!isNaN(v)) onChange(v);
+        }}
+        className={`w-10 md:w-14 bg-transparent text-center font-mono text-lg md:text-xl tabular-nums outline-none focus:bg-secondary px-1 py-0.5`}
       />
       <button
         onClick={onInc}
