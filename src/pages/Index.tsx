@@ -343,10 +343,10 @@ const Index = () => {
             </div>
             <div className="flex flex-wrap items-center gap-4 label-meta">
               <span className="flex items-center gap-2">
-                <span className="inline-block h-3 w-3 bg-primary" /> Fatto
+                <span className="inline-block h-3 w-3" style={{ backgroundColor: "hsl(var(--chart-fatto))" }} /> Fatto
               </span>
               <span className="flex items-center gap-2">
-                <span className="inline-block h-3 w-3 bg-accent" /> Caricato
+                <span className="inline-block h-3 w-3" style={{ backgroundColor: "hsl(var(--chart-caricato))" }} /> Caricato
                 (non fatto)
               </span>
               <span className="flex items-center gap-2">
@@ -406,11 +406,11 @@ const Index = () => {
                     fontFamily: "var(--font-mono)",
                   }}
                 />
-                <Bar dataKey="Fatto" stackId="a" fill="hsl(var(--primary))" />
+                <Bar dataKey="Fatto" stackId="a" fill="hsl(var(--chart-fatto))" />
                 <Bar
                   dataKey="Caricato (non fatto)"
                   stackId="a"
-                  fill="hsl(var(--accent))"
+                  fill="hsl(var(--chart-caricato))"
                 />
                 <Bar
                   dataKey="Da caricare"

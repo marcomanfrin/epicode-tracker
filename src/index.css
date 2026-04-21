@@ -30,6 +30,9 @@
     --accent: 65 100% 50%;
     --accent-foreground: 270 30% 8%;
 
+    --chart-fatto: 273 64% 37%;
+    --chart-caricato: 65 100% 50%;
+
     --destructive: 0 70% 45%;
     --destructive-foreground: 40 33% 97%;
 
@@ -72,6 +75,8 @@
     --muted-foreground: 40 10% 70%;
     --accent: 273 64% 47%;
     --accent-foreground: 40 33% 97%;
+    --chart-fatto: 273 64% 60%;
+    --chart-caricato: 65 100% 55%;
     --destructive: 0 70% 45%;
     --destructive-foreground: 40 33% 97%;
     --border: 40 33% 97%;
