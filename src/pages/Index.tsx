@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { LogOut, Plus, Trash2, Minus, GripVertical } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import {
   Bar,
   BarChart,
@@ -191,6 +192,7 @@ const Index = () => {
             <span className="label-meta hidden sm:inline">
               {courses.length.toString().padStart(2, "0")} corsi
             </span>
+            <ThemeToggle />
             <button
               onClick={signOut}
               className="label-meta inline-flex items-center gap-1.5 hover:text-primary transition-colors"
