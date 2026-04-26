@@ -455,6 +455,25 @@ const Index = () => {
                   stroke="hsl(var(--foreground) / 0.6)"
                   strokeWidth={1}
                 />
+                <Bar
+                  dataKey="__target"
+                  fill="transparent"
+                  isAnimationActive={false}
+                  shape={(props: any) => {
+                    const { x, y, width, payload } = props;
+                    if (payload.__target == null) return <g />;
+                    return (
+                      <line
+                        x1={x - 2}
+                        x2={x + width + 2}
+                        y1={y}
+                        y2={y}
+                        stroke="hsl(0 84% 55%)"
+                        strokeWidth={3}
+                      />
+                    );
+                  }}
+                />
               </BarChart>
             </ResponsiveContainer>
           </div>
