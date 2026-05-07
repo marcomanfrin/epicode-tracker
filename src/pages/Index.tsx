@@ -129,33 +129,6 @@ const Index = () => {
     setTimeout(() => setCopied(false), 1500);
   };
 
-  // Target: { courseId, value } persisted in localStorage
-  const [target, setTarget] = useState<{ courseId: string; value: number } | null>(() => {
-    try {
-      const raw = localStorage.getItem("course-target");
-      return raw ? JSON.parse(raw) : null;
-    } catch {
-      return null;
-    }
-  });
-  const [targetCourseId, setTargetCourseId] = useState<string>("");
-  const [targetValue, setTargetValue] = useState<string>("");
-
-  useEffect(() => {
-    if (target) localStorage.setItem("course-target", JSON.stringify(target));
-    else localStorage.removeItem("course-target");
-  }, [target]);
-
-  // Auto-clear target when reached
-  useEffect(() => {
-    if (!target) return;
-    const c = courses.find((x) => x.id === target.courseId);
-    if (!c || c.fatto >= target.value) {
-      setTarget(null);
-      if (c) toast.success(`Target raggiunto per ${c.name}!`);
-    }
-  }, [courses, target]);
-
   // Initial load + realtime sync
   useEffect(() => {
     const load = async () => {
