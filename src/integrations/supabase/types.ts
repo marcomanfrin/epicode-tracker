@@ -50,12 +50,43 @@ export type Database = {
         }
         Relationships: []
       }
+      share_tokens: {
+        Row: {
+          created_at: string
+          id: string
+          token: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          token: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          token?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_shared_courses: {
+        Args: { _token: string }
+        Returns: {
+          caricato: number
+          fatto: number
+          id: string
+          name: string
+          pos: number
+          totale: number
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
