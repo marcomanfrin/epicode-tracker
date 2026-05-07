@@ -451,7 +451,6 @@ const Index = () => {
                   Fatto: c.fatto,
                   "Caricato (non fatto)": Math.max(0, c.caricato - c.fatto),
                   "Da caricare": Math.max(0, c.totale - c.caricato),
-                  __target: target && target.courseId === c.id ? target.value : null,
                 }))}
                 margin={{ top: 8, right: 8, left: -16, bottom: 0 }}
               >
