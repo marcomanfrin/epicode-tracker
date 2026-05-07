@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { LogOut, Plus, Trash2, Minus, GripVertical } from "lucide-react";
+import { LogOut, Plus, Trash2, Minus, GripVertical, Share2, Copy, Check } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import {
@@ -38,6 +38,14 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 type Course = {
   id: string;
@@ -56,6 +64,70 @@ const Index = () => {
   const [loading, setLoading] = useState(true);
   const [newName, setNewName] = useState("");
   const [newTot, setNewTot] = useState<string>("");
+
+  // Share state
+  const [shareOpen, setShareOpen] = useState(false);
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const [shareLoading, setShareLoading] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const buildShareUrl = (token: string) =>
+    `${window.location.origin}/share/${token}`;
+
+  const openShare = async () => {
+    setShareOpen(true);
+    if (!user || shareUrl) return;
+    setShareLoading(true);
+    // Reuse existing token if any
+    const { data: existing } = await supabase
+      .from("share_tokens")
+      .select("token")
+      .eq("user_id", user.id)
+      .limit(1)
+      .maybeSingle();
+    if (existing?.token) {
+      setShareUrl(buildShareUrl(existing.token));
+      setShareLoading(false);
+      return;
+    }
+    const token = crypto.randomUUID().replace(/-/g, "");
+    const { error } = await supabase
+      .from("share_tokens")
+      .insert({ user_id: user.id, token });
+    if (error) toast.error("Errore: " + error.message);
+    else setShareUrl(buildShareUrl(token));
+    setShareLoading(false);
+  };
+
+  const regenerateShare = async () => {
+    if (!user) return;
+    setShareLoading(true);
+    setCopied(false);
+    await supabase.from("share_tokens").delete().eq("user_id", user.id);
+    const token = crypto.randomUUID().replace(/-/g, "");
+    const { error } = await supabase
+      .from("share_tokens")
+      .insert({ user_id: user.id, token });
+    if (error) toast.error("Errore: " + error.message);
+    else setShareUrl(buildShareUrl(token));
+    setShareLoading(false);
+  };
+
+  const revokeShare = async () => {
+    if (!user) return;
+    setShareLoading(true);
+    await supabase.from("share_tokens").delete().eq("user_id", user.id);
+    setShareUrl(null);
+    setShareLoading(false);
+    toast.success("Link revocato");
+  };
+
+  const copyShare = async () => {
+    if (!shareUrl) return;
+    await navigator.clipboard.writeText(shareUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
 
   // Target: { courseId, value } persisted in localStorage
   const [target, setTarget] = useState<{ courseId: string; value: number } | null>(() => {
@@ -228,6 +300,13 @@ const Index = () => {
               {courses.length.toString().padStart(2, "0")} corsi
             </span>
             <ThemeToggle />
+            <button
+              onClick={openShare}
+              className="label-meta inline-flex items-center gap-1.5 hover:text-primary transition-colors"
+              aria-label="Condividi"
+            >
+              <Share2 className="h-3.5 w-3.5" /> Condividi
+            </button>
             <button
               onClick={signOut}
               className="label-meta inline-flex items-center gap-1.5 hover:text-primary transition-colors"
@@ -604,6 +683,57 @@ const Index = () => {
           {new Date().getFullYear()}
         </p>
       </footer>
+      <Dialog open={shareOpen} onOpenChange={setShareOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Condividi il tuo stato</DialogTitle>
+            <DialogDescription>
+              Chiunque abbia questo link potrà visualizzare i tuoi corsi in sola lettura, senza accedere.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {shareLoading && (
+              <div className="label-meta">Caricamento…</div>
+            )}
+            {!shareLoading && shareUrl && (
+              <>
+                <div className="flex gap-2">
+                  <input
+                    readOnly
+                    value={shareUrl}
+                    onFocus={(e) => e.currentTarget.select()}
+                    className="flex-1 bg-secondary border border-input rounded-md px-3 py-2 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                  />
+                  <button
+                    onClick={copyShare}
+                    className="inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground px-4 py-2 font-mono text-sm uppercase tracking-wider hover:opacity-90 transition-opacity rounded-md"
+                  >
+                    {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                    {copied ? "Copiato" : "Copia"}
+                  </button>
+                </div>
+                <div className="flex gap-3 label-meta">
+                  <button
+                    onClick={regenerateShare}
+                    className="hover:text-primary transition-colors underline"
+                  >
+                    Rigenera link
+                  </button>
+                  <button
+                    onClick={revokeShare}
+                    className="hover:text-destructive transition-colors underline"
+                  >
+                    Revoca
+                  </button>
+                </div>
+              </>
+            )}
+            {!shareLoading && !shareUrl && (
+              <div className="text-sm text-muted-foreground">Nessun link attivo.</div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </main>
   );
 };
