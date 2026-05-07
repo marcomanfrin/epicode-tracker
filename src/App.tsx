@@ -31,6 +31,7 @@ const App = () => (
           <Routes>
             <Route path="/auth" element={<Auth />} />
             <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/share/:token" element={<Shared />} />
             <Route path="/" element={<Protected><Index /></Protected>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
