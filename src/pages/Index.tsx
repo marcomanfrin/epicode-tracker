@@ -301,6 +301,13 @@ const Index = () => {
             </span>
             <ThemeToggle />
             <button
+              onClick={openShare}
+              className="label-meta inline-flex items-center gap-1.5 hover:text-primary transition-colors"
+              aria-label="Condividi"
+            >
+              <Share2 className="h-3.5 w-3.5" /> Condividi
+            </button>
+            <button
               onClick={signOut}
               className="label-meta inline-flex items-center gap-1.5 hover:text-primary transition-colors"
               aria-label="Esci"
