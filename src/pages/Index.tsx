@@ -683,6 +683,57 @@ const Index = () => {
           {new Date().getFullYear()}
         </p>
       </footer>
+      <Dialog open={shareOpen} onOpenChange={setShareOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Condividi il tuo stato</DialogTitle>
+            <DialogDescription>
+              Chiunque abbia questo link potrà visualizzare i tuoi corsi in sola lettura, senza accedere.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {shareLoading && (
+              <div className="label-meta">Caricamento…</div>
+            )}
+            {!shareLoading && shareUrl && (
+              <>
+                <div className="flex gap-2">
+                  <input
+                    readOnly
+                    value={shareUrl}
+                    onFocus={(e) => e.currentTarget.select()}
+                    className="flex-1 bg-secondary border border-input rounded-md px-3 py-2 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                  />
+                  <button
+                    onClick={copyShare}
+                    className="inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground px-4 py-2 font-mono text-sm uppercase tracking-wider hover:opacity-90 transition-opacity rounded-md"
+                  >
+                    {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                    {copied ? "Copiato" : "Copia"}
+                  </button>
+                </div>
+                <div className="flex gap-3 label-meta">
+                  <button
+                    onClick={regenerateShare}
+                    className="hover:text-primary transition-colors underline"
+                  >
+                    Rigenera link
+                  </button>
+                  <button
+                    onClick={revokeShare}
+                    className="hover:text-destructive transition-colors underline"
+                  >
+                    Revoca
+                  </button>
+                </div>
+              </>
+            )}
+            {!shareLoading && !shareUrl && (
+              <div className="text-sm text-muted-foreground">Nessun link attivo.</div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </main>
   );
 };
