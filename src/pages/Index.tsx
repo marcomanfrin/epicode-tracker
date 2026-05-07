@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { LogOut, Plus, Trash2, Minus, GripVertical } from "lucide-react";
+import { LogOut, Plus, Trash2, Minus, GripVertical, Share2, Copy, Check } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import {
