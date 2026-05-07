@@ -6,19 +6,11 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
-  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   DndContext,
   closestCenter,
@@ -128,33 +120,6 @@ const Index = () => {
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   };
-
-  // Target: { courseId, value } persisted in localStorage
-  const [target, setTarget] = useState<{ courseId: string; value: number } | null>(() => {
-    try {
-      const raw = localStorage.getItem("course-target");
-      return raw ? JSON.parse(raw) : null;
-    } catch {
-      return null;
-    }
-  });
-  const [targetCourseId, setTargetCourseId] = useState<string>("");
-  const [targetValue, setTargetValue] = useState<string>("");
-
-  useEffect(() => {
-    if (target) localStorage.setItem("course-target", JSON.stringify(target));
-    else localStorage.removeItem("course-target");
-  }, [target]);
-
-  // Auto-clear target when reached
-  useEffect(() => {
-    if (!target) return;
-    const c = courses.find((x) => x.id === target.courseId);
-    if (!c || c.fatto >= target.value) {
-      setTarget(null);
-      if (c) toast.success(`Target raggiunto per ${c.name}!`);
-    }
-  }, [courses, target]);
 
   // Initial load + realtime sync
   useEffect(() => {
@@ -478,7 +443,6 @@ const Index = () => {
                   Fatto: c.fatto,
                   "Caricato (non fatto)": Math.max(0, c.caricato - c.fatto),
                   "Da caricare": Math.max(0, c.totale - c.caricato),
-                  __target: target && target.courseId === c.id ? target.value : null,
                 }))}
                 margin={{ top: 8, right: 8, left: -16, bottom: 0 }}
               >
@@ -534,102 +498,10 @@ const Index = () => {
                   stroke="hsl(var(--foreground) / 0.6)"
                   strokeWidth={1}
                 />
-                <Bar
-                  dataKey="__target"
-                  fill="transparent"
-                  isAnimationActive={false}
-                  shape={(props: any) => {
-                    const { x, y, width, payload } = props;
-                    if (payload.__target == null) return <g />;
-                    return (
-                      <line
-                        x1={x - 2}
-                        x2={x + width + 2}
-                        y1={y}
-                        y2={y}
-                        stroke="hsl(0 84% 55%)"
-                        strokeWidth={3}
-                      />
-                    );
-                  }}
-                />
               </BarChart>
             </ResponsiveContainer>
           </div>
 
-          {/* TARGET SETTER */}
-          <div className="mt-10">
-            <div className="hairline" />
-            <div className="py-6">
-              <span className="label-meta">Target</span>
-              <h3 className="font-serif text-2xl md:text-3xl mt-2 mb-4">
-                Imposta un <span className="italic text-primary">obiettivo</span>
-              </h3>
-              {target ? (
-                <div className="flex flex-wrap items-center gap-3 font-sans">
-                  <span>
-                    Target attivo su{" "}
-                    <span className="font-medium">
-                      {courses.find((c) => c.id === target.courseId)?.name ?? "—"}
-                    </span>
-                    : <span className="font-mono">{target.value}</span>
-                  </span>
-                  <button
-                    onClick={() => setTarget(null)}
-                    className="label-meta hover:text-primary transition-colors underline"
-                  >
-                    Rimuovi
-                  </button>
-                </div>
-              ) : (
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    const v = parseFloat(targetValue.replace(",", "."));
-                    if (!targetCourseId || isNaN(v) || v <= 0) return;
-                    const c = courses.find((x) => x.id === targetCourseId);
-                    if (!c) return;
-                    if (v <= c.fatto) {
-                      toast.error("Il target deve essere maggiore del fatto attuale");
-                      return;
-                    }
-                    setTarget({ courseId: targetCourseId, value: v });
-                    setTargetCourseId("");
-                    setTargetValue("");
-                  }}
-                  className="flex flex-col sm:flex-row gap-3 max-w-xl"
-                >
-                  <Select value={targetCourseId} onValueChange={setTargetCourseId}>
-                    <SelectTrigger className="flex-1">
-                      <SelectValue placeholder="Seleziona materia" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {courses.map((c) => (
-                        <SelectItem key={c.id} value={c.id}>
-                          {c.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <input
-                    type="text"
-                    inputMode="decimal"
-                    value={targetValue}
-                    onChange={(e) => setTargetValue(e.target.value)}
-                    placeholder="Obiettivo"
-                    className="w-full sm:w-32 bg-transparent border border-input rounded-md px-3 py-2 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                  />
-                  <button
-                    type="submit"
-                    className="inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground px-5 py-2 font-mono text-sm uppercase tracking-wider hover:opacity-90 transition-opacity rounded-md"
-                  >
-                    Imposta
-                  </button>
-                </form>
-              )}
-            </div>
-            <div className="hairline" />
-          </div>
         </div>
       </section>
 
