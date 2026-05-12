@@ -637,9 +637,25 @@ type RowProps = {
   onRemove: (id: string) => void;
   onSetValue: (id: string, key: EditableKey, value: number) => void;
   onUpdate: (id: string, key: EditableKey, delta: number) => void;
+  onSetColor: (id: string, color: string) => void;
 };
 
-const SortableCourseRow = ({ course: c, onRemove, onSetValue, onUpdate }: RowProps) => {
+const ColorDot = ({ color, onChange }: { color: string; onChange: (c: string) => void }) => (
+  <label
+    className="relative inline-block h-4 w-4 rounded-full border border-border-soft cursor-pointer shrink-0"
+    style={{ backgroundColor: color }}
+    title="Cambia colore materia"
+  >
+    <input
+      type="color"
+      value={color.startsWith("#") ? color : "#65229c"}
+      onChange={(e) => onChange(e.target.value)}
+      className="absolute inset-0 opacity-0 cursor-pointer"
+    />
+  </label>
+);
+
+const SortableCourseRow = ({ course: c, onRemove, onSetValue, onUpdate, onSetColor }: RowProps) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: c.id });
   const style = {
