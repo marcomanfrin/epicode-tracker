@@ -14,6 +14,50 @@ export type Database = {
   }
   public: {
     Tables: {
+      calendar_entries: {
+        Row: {
+          course_id: string | null
+          created_at: string
+          date: string
+          id: string
+          kind: string
+          label: string | null
+          note: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          course_id?: string | null
+          created_at?: string
+          date: string
+          id?: string
+          kind: string
+          label?: string | null
+          note?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          course_id?: string | null
+          created_at?: string
+          date?: string
+          id?: string
+          kind?: string
+          label?: string | null
+          note?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calendar_entries_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       courses: {
         Row: {
           caricato: number
