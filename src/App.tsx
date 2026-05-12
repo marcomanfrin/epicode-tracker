@@ -9,6 +9,7 @@ import Index from "./pages/Index.tsx";
 import Auth from "./pages/Auth.tsx";
 import ResetPassword from "./pages/ResetPassword.tsx";
 import Shared from "./pages/Shared.tsx";
+import Calendar from "./pages/Calendar.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -32,6 +33,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/share/:token" element={<Shared />} />
+            <Route path="/calendar" element={<Protected><Calendar /></Protected>} />
             <Route path="/" element={<Protected><Index /></Protected>} />
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { LogOut, Plus, Trash2, Minus, GripVertical, Share2, Copy, Check } from "lucide-react";
+import { LogOut, Plus, Trash2, Minus, GripVertical, Share2, Copy, Check, CalendarDays } from "lucide-react";
+import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import {
@@ -265,6 +266,13 @@ const Index = () => {
               {courses.length.toString().padStart(2, "0")} corsi
             </span>
             <ThemeToggle />
+            <Link
+              to="/calendar"
+              className="label-meta inline-flex items-center gap-1.5 hover:text-primary transition-colors"
+              aria-label="Calendario"
+            >
+              <CalendarDays className="h-3.5 w-3.5" /> Calendario
+            </Link>
             <button
               onClick={openShare}
               className="label-meta inline-flex items-center gap-1.5 hover:text-primary transition-colors"
