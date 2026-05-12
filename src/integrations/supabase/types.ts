@@ -58,9 +58,51 @@ export type Database = {
           },
         ]
       }
+      calendar_todos: {
+        Row: {
+          created_at: string
+          done: boolean
+          entry_id: string
+          id: string
+          position: number
+          text: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          done?: boolean
+          entry_id: string
+          id?: string
+          position?: number
+          text: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          done?: boolean
+          entry_id?: string
+          id?: string
+          position?: number
+          text?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calendar_todos_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "calendar_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       courses: {
         Row: {
           caricato: number
+          color: string | null
           created_at: string
           fatto: number
           id: string
@@ -72,6 +114,7 @@ export type Database = {
         }
         Insert: {
           caricato?: number
+          color?: string | null
           created_at?: string
           fatto?: number
           id?: string
@@ -83,6 +126,7 @@ export type Database = {
         }
         Update: {
           caricato?: number
+          color?: string | null
           created_at?: string
           fatto?: number
           id?: string

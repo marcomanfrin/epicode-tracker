@@ -47,7 +47,15 @@ type Course = {
   fatto: number;
   caricato: number;
   position: number;
+  color: string | null;
 };
+
+const COURSE_PALETTE = [
+  "#65229c", "#e07a1f", "#2e8b57", "#2563eb",
+  "#eab308", "#db2777", "#0d9488", "#dc2626",
+];
+export const courseColor = (c: { color: string | null; position?: number }, idx = 0) =>
+  c.color || COURSE_PALETTE[(c.position ?? idx) % COURSE_PALETTE.length];
 
 type EditableKey = "fatto" | "caricato";
 
@@ -203,6 +211,12 @@ const Index = () => {
     }
   };
 
+  const setColor = async (id: string, color: string) => {
+    setCourses((prev) => prev.map((c) => (c.id === id ? { ...c, color } : c)));
+    const { error } = await supabase.from("courses").update({ color }).eq("id", id);
+    if (error) toast.error("Errore colore: " + error.message);
+  };
+
   const add = async (e: React.FormEvent) => {
     e.preventDefault();
     const name = newName.trim();
@@ -343,6 +357,7 @@ const Index = () => {
                     onRemove={remove}
                     onSetValue={setValue}
                     onUpdate={update}
+                    onSetColor={setColor}
                   />
                 ))}
                 {/* Mobile totals */}
@@ -393,6 +408,7 @@ const Index = () => {
                     onRemove={remove}
                     onSetValue={setValue}
                     onUpdate={update}
+                    onSetColor={setColor}
                   />
                 ))}
 
@@ -623,9 +639,25 @@ type RowProps = {
   onRemove: (id: string) => void;
   onSetValue: (id: string, key: EditableKey, value: number) => void;
   onUpdate: (id: string, key: EditableKey, delta: number) => void;
+  onSetColor: (id: string, color: string) => void;
 };
 
-const SortableCourseRow = ({ course: c, onRemove, onSetValue, onUpdate }: RowProps) => {
+const ColorDot = ({ color, onChange }: { color: string; onChange: (c: string) => void }) => (
+  <label
+    className="relative inline-block h-4 w-4 rounded-full border border-border-soft cursor-pointer shrink-0"
+    style={{ backgroundColor: color }}
+    title="Cambia colore materia"
+  >
+    <input
+      type="color"
+      value={color.startsWith("#") ? color : "#65229c"}
+      onChange={(e) => onChange(e.target.value)}
+      className="absolute inset-0 opacity-0 cursor-pointer"
+    />
+  </label>
+);
+
+const SortableCourseRow = ({ course: c, onRemove, onSetValue, onUpdate, onSetColor }: RowProps) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: c.id });
   const style = {
@@ -646,7 +678,10 @@ const SortableCourseRow = ({ course: c, onRemove, onSetValue, onUpdate }: RowPro
         >
           <GripVertical className="h-4 w-4" />
         </button>
-        <div className="font-serif text-3xl truncate">{c.name}</div>
+        <div className="font-serif text-3xl truncate flex items-center gap-2">
+          <ColorDot color={courseColor(c)} onChange={(col) => onSetColor(c.id, col)} />
+          <span className="truncate">{c.name}</span>
+        </div>
         <Stepper
           value={c.fatto}
           max={c.caricato}
@@ -678,7 +713,7 @@ const SortableCourseRow = ({ course: c, onRemove, onSetValue, onUpdate }: RowPro
   );
 };
 
-const SortableCourseCard = ({ course: c, onRemove, onSetValue, onUpdate }: RowProps) => {
+const SortableCourseCard = ({ course: c, onRemove, onSetValue, onUpdate, onSetColor }: RowProps) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: c.id });
   const style = {
@@ -701,6 +736,7 @@ const SortableCourseCard = ({ course: c, onRemove, onSetValue, onUpdate }: RowPr
             >
               <GripVertical className="h-4 w-4" />
             </button>
+            <ColorDot color={courseColor(c)} onChange={(col) => onSetColor(c.id, col)} />
             <h3 className="font-serif text-2xl truncate flex-1">{c.name}</h3>
           </div>
           <div className="flex items-baseline gap-2 shrink-0">
