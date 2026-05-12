@@ -33,6 +33,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/share/:token" element={<Shared />} />
+            <Route path="/calendar" element={<Protected><Calendar /></Protected>} />
             <Route path="/" element={<Protected><Index /></Protected>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
