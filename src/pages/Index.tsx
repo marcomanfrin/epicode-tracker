@@ -357,6 +357,7 @@ const Index = () => {
                     onRemove={remove}
                     onSetValue={setValue}
                     onUpdate={update}
+                    onSetColor={setColor}
                   />
                 ))}
                 {/* Mobile totals */}
@@ -407,6 +408,7 @@ const Index = () => {
                     onRemove={remove}
                     onSetValue={setValue}
                     onUpdate={update}
+                    onSetColor={setColor}
                   />
                 ))}
 
@@ -676,7 +678,10 @@ const SortableCourseRow = ({ course: c, onRemove, onSetValue, onUpdate, onSetCol
         >
           <GripVertical className="h-4 w-4" />
         </button>
-        <div className="font-serif text-3xl truncate">{c.name}</div>
+        <div className="font-serif text-3xl truncate flex items-center gap-2">
+          <ColorDot color={courseColor(c)} onChange={(col) => onSetColor(c.id, col)} />
+          <span className="truncate">{c.name}</span>
+        </div>
         <Stepper
           value={c.fatto}
           max={c.caricato}
@@ -708,7 +713,7 @@ const SortableCourseRow = ({ course: c, onRemove, onSetValue, onUpdate, onSetCol
   );
 };
 
-const SortableCourseCard = ({ course: c, onRemove, onSetValue, onUpdate }: RowProps) => {
+const SortableCourseCard = ({ course: c, onRemove, onSetValue, onUpdate, onSetColor }: RowProps) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: c.id });
   const style = {
