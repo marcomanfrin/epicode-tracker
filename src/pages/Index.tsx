@@ -211,7 +211,12 @@ const Index = () => {
     }
   };
 
-  const add = async (e: React.FormEvent) => {
+  const setColor = async (id: string, color: string) => {
+    setCourses((prev) => prev.map((c) => (c.id === id ? { ...c, color } : c)));
+    const { error } = await supabase.from("courses").update({ color }).eq("id", id);
+    if (error) toast.error("Errore colore: " + error.message);
+  };
+
     e.preventDefault();
     const name = newName.trim();
     const totale = parseFloat(newTot);
