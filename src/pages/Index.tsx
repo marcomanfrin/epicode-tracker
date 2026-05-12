@@ -217,6 +217,7 @@ const Index = () => {
     if (error) toast.error("Errore colore: " + error.message);
   };
 
+  const add = async (e: React.FormEvent) => {
     e.preventDefault();
     const name = newName.trim();
     const totale = parseFloat(newTot);
