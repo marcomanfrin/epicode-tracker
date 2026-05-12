@@ -736,6 +736,7 @@ const SortableCourseCard = ({ course: c, onRemove, onSetValue, onUpdate, onSetCo
             >
               <GripVertical className="h-4 w-4" />
             </button>
+            <ColorDot color={courseColor(c)} onChange={(col) => onSetColor(c.id, col)} />
             <h3 className="font-serif text-2xl truncate flex-1">{c.name}</h3>
           </div>
           <div className="flex items-baseline gap-2 shrink-0">
