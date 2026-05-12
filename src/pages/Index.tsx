@@ -47,7 +47,15 @@ type Course = {
   fatto: number;
   caricato: number;
   position: number;
+  color: string | null;
 };
+
+const COURSE_PALETTE = [
+  "#65229c", "#e07a1f", "#2e8b57", "#2563eb",
+  "#eab308", "#db2777", "#0d9488", "#dc2626",
+];
+export const courseColor = (c: { color: string | null; position?: number }, idx = 0) =>
+  c.color || COURSE_PALETTE[(c.position ?? idx) % COURSE_PALETTE.length];
 
 type EditableKey = "fatto" | "caricato";
 
