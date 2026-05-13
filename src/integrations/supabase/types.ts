@@ -164,6 +164,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_shared_calendar: {
+        Args: { _token: string }
+        Returns: {
+          course_color: string
+          course_id: string
+          course_name: string
+          date: string
+          id: string
+          kind: string
+          label: string
+          note: string
+          todos: Json
+        }[]
+      }
       get_shared_courses: {
         Args: { _token: string }
         Returns: {
