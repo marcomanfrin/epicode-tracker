@@ -10,6 +10,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { ChevronLeft, ChevronRight, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 type Course = {
@@ -21,18 +22,73 @@ type Course = {
   pos: number;
 };
 
+type Kind = "lezione" | "lavoro" | "ferie" | "studio" | "progetto" | "esame" | "nota";
+
+type SharedEntry = {
+  id: string;
+  date: string;
+  kind: Kind;
+  course_id: string | null;
+  label: string | null;
+  note: string | null;
+  course_name: string | null;
+  course_color: string | null;
+  todos: { id: string; text: string; done: boolean }[];
+};
+
+const ORANGE = "hsl(20 90% 55%)";
+
+const KIND_META: Record<Kind, { short: string; full: string }> = {
+  lezione:  { short: "L",    full: "Lezione" },
+  lavoro:   { short: "W",    full: "Lavoro" },
+  ferie:    { short: "X",    full: "Ferie" },
+  studio:   { short: "●",    full: "Studio" },
+  progetto: { short: "PROJ", full: "Progetto" },
+  esame:    { short: "ES",   full: "Esame" },
+  nota:     { short: "N",    full: "Nota" },
+};
+
+const MONTH_NAMES = [
+  "Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno",
+  "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre",
+];
+const WEEK_NAMES = ["Lun", "Mar", "Mer", "Gio", "Ven", "Sab", "Dom"];
+
+const fmt = (d: Date) => {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+};
+
 const Shared = () => {
   const { token } = useParams<{ token: string }>();
   const [courses, setCourses] = useState<Course[]>([]);
+  const [entries, setEntries] = useState<SharedEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const today = new Date();
+  const [cursor, setCursor] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
 
   useEffect(() => {
     if (!token) return;
     const load = async () => {
-      const { data, error } = await supabase.rpc("get_shared_courses", { _token: token });
-      if (error) setError(error.message);
-      else setCourses((data as Course[]) ?? []);
+      const { data: coursesData, error: coursesError } = await supabase.rpc("get_shared_courses", { _token: token });
+      if (coursesError) {
+        setError(coursesError.message);
+        setLoading(false);
+        return;
+      }
+      setCourses((coursesData as Course[]) ?? []);
+
+      const { data: calData, error: calError } = await supabase.rpc("get_shared_calendar", { _token: token });
+      if (calError) {
+        setError(calError.message);
+        setLoading(false);
+        return;
+      }
+      setEntries((calData as SharedEntry[]) ?? []);
       setLoading(false);
     };
     load();
@@ -45,6 +101,83 @@ const Shared = () => {
     const totale = r(courses.reduce((s, c) => s + Number(c.totale), 0));
     return { fatto, caricato, daCaricare: r(totale - caricato), totale };
   }, [courses]);
+
+  // Calendar data
+  const range = useMemo(() => {
+    const start = new Date(cursor);
+    const dow = (start.getDay() + 6) % 7;
+    start.setDate(start.getDate() - dow);
+    const end = new Date(start);
+    end.setDate(end.getDate() + 41);
+    return { start, end };
+  }, [cursor]);
+
+  const days = useMemo(() => {
+    const arr: Date[] = [];
+    for (let i = 0; i < 42; i++) {
+      const d = new Date(range.start);
+      d.setDate(d.getDate() + i);
+      arr.push(d);
+    }
+    return arr;
+  }, [range.start]);
+
+  const byDay = useMemo(() => {
+    const map = new Map<string, SharedEntry[]>();
+    entries.forEach((e) => {
+      const list = map.get(e.date) ?? [];
+      list.push(e);
+      map.set(e.date, list);
+    });
+    return map;
+  }, [entries]);
+
+  const monthLabel = `${MONTH_NAMES[cursor.getMonth()]} ${cursor.getFullYear()}`;
+
+  const colorForEntry = (e: SharedEntry): string => {
+    if (e.kind === "lavoro" || e.kind === "ferie") return ORANGE;
+    if (e.course_color) return e.course_color;
+    return "hsl(var(--foreground))";
+  };
+
+  const renderCellEntry = (e: SharedEntry) => {
+    const meta = KIND_META[e.kind];
+    const color = colorForEntry(e);
+    if (e.kind === "studio") {
+      return (
+        <span
+          key={e.id}
+          title={e.course_name || "Studio"}
+          className="h-2.5 w-2.5 rounded-full"
+          style={{ backgroundColor: color }}
+        />
+      );
+    }
+    if (e.kind === "esame") {
+      return (
+        <span
+          key={e.id}
+          className="font-mono text-[10px] sm:text-xs px-1 rounded font-bold uppercase truncate max-w-full"
+          style={{ color }}
+          title={e.course_name || undefined}
+        >
+          {(e.course_name || "ES").slice(0, 8)}
+        </span>
+      );
+    }
+    return (
+      <span
+        key={e.id}
+        className="font-mono text-[10px] sm:text-xs px-1 rounded"
+        style={{
+          backgroundColor: `color-mix(in srgb, ${color} 18%, transparent)`,
+          color,
+        }}
+      >
+        {meta.short}
+      </span>
+    );
+  };
 
   return (
     <main className="min-h-screen bg-background text-foreground">
@@ -216,6 +349,167 @@ const Shared = () => {
                   </BarChart>
                 </ResponsiveContainer>
               </div>
+            </div>
+
+            {/* CALENDAR */}
+            <div className="mt-20">
+              <div className="flex flex-wrap items-baseline justify-between gap-4 mb-6">
+                <div>
+                  <span className="label-meta">Calendario</span>
+                  <h2 className="font-serif text-3xl md:text-4xl mt-2">
+                    Eventi e <span className="italic">annotazioni</span>
+                  </h2>
+                </div>
+              </div>
+              <div className="hairline" />
+
+              <div className="flex items-center justify-between my-4">
+                <button
+                  onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1))}
+                  className="p-2 hover:bg-secondary rounded transition-colors"
+                  aria-label="Mese precedente"
+                >
+                  <ChevronLeft className="h-5 w-5" />
+                </button>
+                <h3 className="font-serif text-2xl md:text-3xl">{monthLabel}</h3>
+                <button
+                  onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1))}
+                  className="p-2 hover:bg-secondary rounded transition-colors"
+                  aria-label="Mese successivo"
+                >
+                  <ChevronRight className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-7 gap-px mb-px">
+                {WEEK_NAMES.map((w) => (
+                  <div key={w} className="label-meta text-center py-2 bg-secondary/40">
+                    <span className="hidden sm:inline">{w}</span>
+                    <span className="sm:hidden">{w.slice(0, 1)}</span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-7 gap-px bg-border-soft">
+                {days.map((d) => {
+                  const key = fmt(d);
+                  const inMonth = d.getMonth() === cursor.getMonth();
+                  const isToday = key === fmt(today);
+                  const list = byDay.get(key) ?? [];
+                  return (
+                    <div
+                      key={key}
+                      className={`relative min-h-[72px] sm:min-h-[110px] p-1.5 text-left bg-background ${inMonth ? "" : "opacity-40"}`}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <span
+                          className={`font-mono text-xs tabular-nums ${
+                            isToday
+                              ? "bg-primary text-primary-foreground px-1.5 py-0.5 rounded"
+                              : "text-muted-foreground"
+                          }`}
+                        >
+                          {d.getDate()}
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap gap-0.5 items-center">
+                        {list.slice(0, 5).map(renderCellEntry)}
+                        {list.length > 5 && (
+                          <span className="font-mono text-[10px] text-muted-foreground">
+                            +{list.length - 5}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Legend */}
+              <div className="mt-6 flex flex-wrap gap-x-4 gap-y-2 label-meta">
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="font-mono text-[10px] px-1 rounded" style={{ backgroundColor: `color-mix(in srgb, ${ORANGE} 18%, transparent)`, color: ORANGE }}>W</span>
+                  Lavoro
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="font-mono text-[10px] px-1 rounded" style={{ backgroundColor: `color-mix(in srgb, ${ORANGE} 18%, transparent)`, color: ORANGE }}>X</span>
+                  Ferie
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="h-2.5 w-2.5 rounded-full bg-foreground inline-block" />
+                  Studio (colore materia)
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="font-mono text-[10px] px-1 rounded bg-foreground/10">L / PROJ / ES</span>
+                  Lezione, Progetto, Esame (colore materia)
+                </span>
+              </div>
+
+              {/* Day detail list */}
+              {entries.length > 0 && (
+                <div className="mt-10 space-y-6">
+                  <div className="hairline" />
+                  {Array.from(new Set(entries.map((e) => e.date))).sort().map((dateKey) => {
+                    const dayList = byDay.get(dateKey) ?? [];
+                    const dateObj = new Date(dateKey + "T00:00:00");
+                    const label = dateObj.toLocaleDateString("it-IT", {
+                      weekday: "long", day: "numeric", month: "long", year: "numeric",
+                    });
+                    return (
+                      <div key={dateKey}>
+                        <h4 className="font-serif text-xl mb-3">{label}</h4>
+                        <div className="space-y-2">
+                          {dayList.map((e) => {
+                            const meta = KIND_META[e.kind];
+                            const color = colorForEntry(e);
+                            return (
+                              <div key={e.id} className="border border-border-soft rounded p-2.5">
+                                <div className="flex items-start gap-2">
+                                  {e.kind === "studio" ? (
+                                    <span className="h-3 w-3 rounded-full mt-1.5 shrink-0" style={{ backgroundColor: color }} />
+                                  ) : (
+                                    <span
+                                      className="font-mono text-[10px] px-1 rounded shrink-0 mt-0.5"
+                                      style={{ backgroundColor: `color-mix(in srgb, ${color} 18%, transparent)`, color }}
+                                    >
+                                      {meta.short}
+                                    </span>
+                                  )}
+                                  <div className="flex-1 min-w-0 text-sm">
+                                    <div className="font-medium" style={e.course_name ? { color } : undefined}>
+                                      {e.kind === "esame" && e.course_name ? e.course_name : meta.full}
+                                      {e.kind !== "esame" && e.course_name ? ` · ${e.course_name}` : ""}
+                                      {e.label ? ` · ${e.label}` : ""}
+                                    </div>
+                                    {e.note && <div className="text-muted-foreground text-xs mt-0.5 break-words">{e.note}</div>}
+                                  </div>
+                                </div>
+                                {e.todos && e.todos.length > 0 && (
+                                  <div className="mt-2 pl-6 space-y-1">
+                                    {e.todos.map((t) => (
+                                      <div key={t.id} className="flex items-center gap-2 text-sm">
+                                        <span className={`h-4 w-4 rounded border flex items-center justify-center shrink-0 ${
+                                          t.done ? "bg-primary border-primary text-primary-foreground" : "border-border"
+                                        }`}>
+                                          {t.done && <Check className="h-3 w-3" />}
+                                        </span>
+                                        <span className={`flex-1 break-words ${t.done ? "line-through text-muted-foreground" : ""}`}>
+                                          {t.text}
+                                        </span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                        <div className="hairline mt-6" />
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </>
         )}
