@@ -24,6 +24,7 @@ import { courseColor } from "./Index";
 
 type Course = { id: string; name: string; position: number; color: string | null };
 type Kind = "lezione" | "lavoro" | "ferie" | "studio" | "progetto" | "esame" | "nota";
+type CalView = "month" | "week" | "day";
 type Entry = {
   id: string;
   date: string;
@@ -68,7 +69,12 @@ const fmt = (d: Date) => {
 const Calendar = () => {
   const { user } = useAuth();
   const today = new Date();
-  const [cursor, setCursor] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
+  const todayFmt = fmt(today);
+
+  const [view, setView] = useState<CalView>(() =>
+    typeof window !== "undefined" && window.innerWidth < 640 ? "week" : "month"
+  );
+  const [cursor, setCursor] = useState(today);
   const [entries, setEntries] = useState<Entry[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
   const [openDay, setOpenDay] = useState<string | null>(null);
@@ -92,13 +98,25 @@ const Calendar = () => {
   }, [user]);
 
   const range = useMemo(() => {
-    const start = new Date(cursor);
+    if (view === "day") {
+      return { start: cursor, end: cursor };
+    }
+    if (view === "week") {
+      const start = new Date(cursor);
+      const dow = (start.getDay() + 6) % 7;
+      start.setDate(start.getDate() - dow);
+      const end = new Date(start);
+      end.setDate(end.getDate() + 6);
+      return { start, end };
+    }
+    // month: 6-week grid starting from the Monday at or before the 1st
+    const start = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
     const dow = (start.getDay() + 6) % 7;
     start.setDate(start.getDate() - dow);
     const end = new Date(start);
     end.setDate(end.getDate() + 41);
     return { start, end };
-  }, [cursor]);
+  }, [view, cursor]);
 
   useEffect(() => {
     if (!user) return;
@@ -117,7 +135,7 @@ const Calendar = () => {
     })();
   }, [user, range.start, range.end]);
 
-  // Load todos for entries currently visible in the open dialog
+  // Load todos when dialog opens
   useEffect(() => {
     if (!openDay || !user) return;
     const dayEntryIds = entries.filter((e) => e.date === openDay).map((e) => e.id);
@@ -139,7 +157,32 @@ const Calendar = () => {
     })();
   }, [openDay, entries, user]);
 
-  const days = useMemo(() => {
+  // Load todos for day view (inline, no dialog)
+  useEffect(() => {
+    if (view !== "day" || !user) return;
+    const key = fmt(cursor);
+    const dayEntryIds = entries.filter((e) => e.date === key).map((e) => e.id);
+    if (dayEntryIds.length === 0) return;
+    (async () => {
+      const { data } = await supabase
+        .from("calendar_todos")
+        .select("id,entry_id,text,done,position")
+        .in("entry_id", dayEntryIds)
+        .order("position", { ascending: true })
+        .order("created_at", { ascending: true });
+      const grouped: Record<string, Todo[]> = {};
+      (data ?? []).forEach((t) => {
+        const arr = grouped[t.entry_id] ?? [];
+        arr.push(t as Todo);
+        grouped[t.entry_id] = arr;
+      });
+      setTodos((prev) => ({ ...prev, ...grouped }));
+    })();
+  }, [view, cursor, entries, user]);
+
+  // Month grid: 42 days from range.start
+  const monthDays = useMemo(() => {
+    if (view !== "month") return [];
     const arr: Date[] = [];
     for (let i = 0; i < 42; i++) {
       const d = new Date(range.start);
@@ -147,7 +190,20 @@ const Calendar = () => {
       arr.push(d);
     }
     return arr;
-  }, [range.start]);
+  }, [view, range.start]);
+
+  // Week view: 7 days Mon–Sun
+  const weekDays = useMemo(() => {
+    if (view !== "week") return [];
+    const start = new Date(cursor);
+    const dow = (start.getDay() + 6) % 7;
+    start.setDate(start.getDate() - dow);
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(start);
+      d.setDate(d.getDate() + i);
+      return d;
+    });
+  }, [view, cursor]);
 
   const byDay = useMemo(() => {
     const map = new Map<string, Entry[]>();
@@ -173,6 +229,38 @@ const Calendar = () => {
     }
     return "hsl(var(--foreground))";
   };
+
+  const navigate = (dir: -1 | 1) => {
+    const d = new Date(cursor);
+    if (view === "month") {
+      d.setMonth(d.getMonth() + dir);
+      d.setDate(1);
+    } else if (view === "week") {
+      d.setDate(d.getDate() + dir * 7);
+    } else {
+      d.setDate(d.getDate() + dir);
+    }
+    setCursor(d);
+  };
+
+  const headerLabel = useMemo(() => {
+    if (view === "month") {
+      return `${MONTH_NAMES[cursor.getMonth()]} ${cursor.getFullYear()}`;
+    }
+    if (view === "week") {
+      const start = new Date(cursor);
+      const dow = (start.getDay() + 6) % 7;
+      start.setDate(start.getDate() - dow);
+      const end = new Date(start);
+      end.setDate(end.getDate() + 6);
+      const s = `${start.getDate()} ${MONTH_NAMES[start.getMonth()].slice(0, 3)}`;
+      const e = `${end.getDate()} ${MONTH_NAMES[end.getMonth()].slice(0, 3)}`;
+      return `${s}–${e} ${end.getFullYear()}`;
+    }
+    return cursor.toLocaleDateString("it-IT", {
+      weekday: "long", day: "numeric", month: "long",
+    });
+  }, [view, cursor]);
 
   const resetForm = () => {
     setNewKind("studio");
@@ -258,9 +346,7 @@ const Calendar = () => {
     await supabase.from("calendar_todos").delete().eq("id", t.id);
   };
 
-  const monthLabel = `${MONTH_NAMES[cursor.getMonth()]} ${cursor.getFullYear()}`;
-  const dayEntries = openDay ? byDay.get(openDay) ?? [] : [];
-
+  // Small pill for month/week grid cells
   const renderCellEntry = (e: Entry) => {
     const meta = KIND_META[e.kind];
     const color = colorForEntry(e);
@@ -293,6 +379,168 @@ const Calendar = () => {
     );
   };
 
+  // Full entry card for day view and dialog
+  const renderEntryCard = (e: Entry) => {
+    const meta = KIND_META[e.kind];
+    const c = e.course_id ? courseMap.get(e.course_id) : null;
+    const color = colorForEntry(e);
+    const list = todos[e.id] ?? [];
+    const isExam = e.kind === "esame";
+    const Icon = meta.icon;
+    return (
+      <div
+        key={e.id}
+        className={`rounded p-2.5 ${isExam ? "border-2" : "border border-border-soft"}`}
+        style={isExam ? { borderColor: color, backgroundColor: `color-mix(in srgb, ${color} 8%, transparent)` } : undefined}
+      >
+        <div className="flex items-start gap-2">
+          <span
+            className={`inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0 mt-0.5 ${isExam ? "border-2" : "border"}`}
+            style={{
+              backgroundColor: `color-mix(in srgb, ${color} ${isExam ? 20 : 10}%, transparent)`,
+              borderColor: isExam ? color : `color-mix(in srgb, ${color} 30%, transparent)`,
+              color,
+            }}
+          >
+            <Icon className="h-3 w-3" />
+            {isExam && <span className="uppercase tracking-tight">{meta.short}</span>}
+          </span>
+          <div className="flex-1 min-w-0 text-sm">
+            <div className="font-medium" style={c ? { color } : undefined}>
+              {meta.full}
+              {c ? ` · ${c.name}` : ""}
+              {e.label ? ` · ${e.label}` : ""}
+            </div>
+            {e.note && <div className="text-muted-foreground text-xs mt-0.5 break-words">{e.note}</div>}
+          </div>
+          <button
+            onClick={() => deleteEntry(e.id)}
+            className="text-muted-foreground hover:text-destructive p-1"
+            aria-label="Elimina"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        </div>
+        <div className="mt-2 pl-6 space-y-1">
+          {list.map((t) => (
+            <div key={t.id} className="flex items-center gap-2 text-sm group">
+              <button
+                onClick={() => toggleTodo(t)}
+                className={`h-4 w-4 rounded border flex items-center justify-center shrink-0 ${
+                  t.done ? "bg-primary border-primary text-primary-foreground" : "border-border"
+                }`}
+                aria-label={t.done ? "Segna non fatta" : "Segna fatta"}
+              >
+                {t.done && <Check className="h-3 w-3" />}
+              </button>
+              <span className={`flex-1 break-words ${t.done ? "line-through text-muted-foreground" : ""}`}>
+                {t.text}
+              </span>
+              <button
+                onClick={() => deleteTodo(t)}
+                className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-opacity"
+                aria-label="Elimina todo"
+              >
+                <Trash2 className="h-3 w-3" />
+              </button>
+            </div>
+          ))}
+          <div className="flex items-center gap-2 pt-1">
+            <Input
+              placeholder="Nuova todo…"
+              value={newTodoText[e.id] ?? ""}
+              onChange={(ev) => setNewTodoText((p) => ({ ...p, [e.id]: ev.target.value }))}
+              onKeyDown={(ev) => { if (ev.key === "Enter") { ev.preventDefault(); addTodo(e.id); } }}
+              className="h-8 text-xs"
+            />
+            <Button size="sm" variant="outline" className="h-8 px-2" onClick={() => addTodo(e.id)}>
+              <Plus className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderAddForm = () => (
+    <div className="border-t border-border-soft pt-4 space-y-3">
+      <div className="label-meta">Aggiungi annotazione</div>
+      <Select value={newKind} onValueChange={(v) => { setNewKind(v as Kind); setNewCourse(""); }}>
+        <SelectTrigger><SelectValue /></SelectTrigger>
+        <SelectContent>
+          {(Object.keys(KIND_META) as Kind[]).map((k) => (
+            <SelectItem key={k} value={k}>{KIND_META[k].full}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      {KIND_META[newKind].requiresCourse && (
+        <Select value={newCourse} onValueChange={setNewCourse}>
+          <SelectTrigger>
+            <SelectValue placeholder={courses.length ? "Seleziona materia" : "Nessuna materia: aggiungine una"} />
+          </SelectTrigger>
+          <SelectContent>
+            {courses.map((c) => (
+              <SelectItem key={c.id} value={c.id}>
+                <span className="inline-flex items-center gap-2">
+                  <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: courseColor(c) }} />
+                  {c.name}
+                </span>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
+      <Input
+        placeholder="Etichetta breve (opzionale)"
+        value={newLabel}
+        onChange={(e) => setNewLabel(e.target.value)}
+      />
+      <Input
+        placeholder="Nota (opzionale)"
+        value={newNote}
+        onChange={(e) => setNewNote(e.target.value)}
+      />
+      <Button onClick={addEntry} className="w-full">
+        <Plus className="h-4 w-4 mr-1" /> Aggiungi
+      </Button>
+    </div>
+  );
+
+  const renderLegend = () => (
+    <div className="mt-6 flex flex-wrap gap-x-4 gap-y-2 label-meta">
+      {([
+        { k: "lezione", c: "hsl(var(--foreground))" },
+        { k: "studio", c: "hsl(var(--foreground))" },
+        { k: "progetto", c: "hsl(var(--foreground))" },
+        { k: "esame", c: "hsl(var(--foreground))" },
+        { k: "lavoro", c: ORANGE },
+        { k: "ferie", c: ORANGE },
+        { k: "nota", c: "hsl(var(--foreground))" },
+      ] as { k: Kind; c: string }[]).map(({ k, c }) => {
+        const meta = KIND_META[k];
+        const Icon = meta.icon;
+        return (
+          <span key={k} className="inline-flex items-center gap-1.5">
+            <span
+              className={`inline-flex items-center justify-center px-1.5 py-0.5 rounded ${k === "esame" ? "border-2" : "border"}`}
+              style={{
+                backgroundColor: `color-mix(in srgb, ${c} 10%, transparent)`,
+                borderColor: k === "esame" ? c : `color-mix(in srgb, ${c} 30%, transparent)`,
+                color: c,
+              }}
+            >
+              <Icon className="h-3 w-3" />
+            </span>
+            {meta.full}
+          </span>
+        );
+      })}
+      <span className="text-muted-foreground italic">· colori = materia</span>
+    </div>
+  );
+
+  const dayEntries = openDay ? byDay.get(openDay) ?? [] : [];
+
   return (
     <main className="min-h-screen bg-background text-foreground">
       <header className="container-editorial pt-10 md:pt-16 pb-6 md:pb-10">
@@ -311,110 +559,214 @@ const Calendar = () => {
       </header>
 
       <section className="container-editorial pb-20">
-        <div className="flex items-center justify-between mb-4">
+        {/* View switcher */}
+        <div className="flex items-center justify-end gap-1 mb-4">
+          {(["month", "week", "day"] as CalView[]).map((v) => (
+            <button
+              key={v}
+              onClick={() => setView(v)}
+              className={`label-meta px-3 py-1.5 rounded transition-colors ${
+                view === v ? "bg-primary text-primary-foreground" : "hover:bg-secondary"
+              }`}
+            >
+              {v === "month" ? "Mese" : v === "week" ? "Sett." : "Giorno"}
+            </button>
+          ))}
+        </div>
+
+        {/* Navigation */}
+        <div className="flex items-center justify-between mb-4 gap-2">
           <button
-            onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1))}
-            className="p-2 hover:bg-secondary rounded transition-colors"
-            aria-label="Mese precedente"
+            onClick={() => navigate(-1)}
+            className="p-2 hover:bg-secondary rounded transition-colors shrink-0"
+            aria-label="Precedente"
           >
             <ChevronLeft className="h-5 w-5" />
           </button>
-          <h2 className="font-serif text-2xl md:text-3xl">{monthLabel}</h2>
+          <div className="flex flex-col items-center gap-1 min-w-0">
+            <h2
+              className={`font-serif text-center ${
+                view === "day" ? "text-lg md:text-2xl capitalize" : "text-2xl md:text-3xl"
+              }`}
+            >
+              {headerLabel}
+            </h2>
+            <button
+              onClick={() => setCursor(today)}
+              className="label-meta text-xs text-muted-foreground hover:text-primary transition-colors"
+            >
+              Oggi
+            </button>
+          </div>
           <button
-            onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1))}
-            className="p-2 hover:bg-secondary rounded transition-colors"
-            aria-label="Mese successivo"
+            onClick={() => navigate(1)}
+            className="p-2 hover:bg-secondary rounded transition-colors shrink-0"
+            aria-label="Successivo"
           >
             <ChevronRight className="h-5 w-5" />
           </button>
         </div>
 
-        <div className="grid grid-cols-7 gap-px mb-px">
-          {WEEK_NAMES.map((w) => (
-            <div key={w} className="label-meta text-center py-2 bg-secondary/40">
-              <span className="hidden sm:inline">{w}</span>
-              <span className="sm:hidden">{w.slice(0, 1)}</span>
+        {/* ── MONTH VIEW ── */}
+        {view === "month" && (
+          <>
+            <div className="grid grid-cols-7 gap-px mb-px">
+              {WEEK_NAMES.map((w) => (
+                <div key={w} className="label-meta text-center py-2 bg-secondary/40">
+                  <span className="hidden sm:inline">{w}</span>
+                  <span className="sm:hidden">{w.slice(0, 1)}</span>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-
-        <div className="grid grid-cols-7 gap-px bg-border-soft">
-          {days.map((d) => {
-            const key = fmt(d);
-            const inMonth = d.getMonth() === cursor.getMonth();
-            const isToday = key === fmt(today);
-            const list = byDay.get(key) ?? [];
-            const examEntry = list.find((e) => e.kind === "esame");
-            const examColor = examEntry ? colorForEntry(examEntry) : null;
-            return (
-              <button
-                key={key}
-                onClick={() => { setOpenDay(key); resetForm(); }}
-                className={`relative min-h-[72px] sm:min-h-[110px] p-1.5 text-left hover:bg-secondary/40 transition-colors overflow-hidden ${
-                  inMonth ? "" : "opacity-40"
-                } ${examColor ? "" : "bg-background"}`}
-                style={examColor ? {
-                  backgroundColor: `color-mix(in srgb, ${examColor} 10%, var(--background, white))`,
-                  borderLeft: `3px solid ${examColor}`,
-                } : undefined}
-              >
-                <div className="flex items-center justify-between mb-1">
-                  <span
-                    className={`font-mono text-xs tabular-nums ${
-                      isToday
-                        ? "bg-primary text-primary-foreground px-1.5 py-0.5 rounded"
-                        : "text-muted-foreground"
-                    }`}
+            <div className="grid grid-cols-7 gap-px bg-border-soft">
+              {monthDays.map((d) => {
+                const key = fmt(d);
+                const inMonth = d.getMonth() === cursor.getMonth();
+                const isToday = key === todayFmt;
+                const list = byDay.get(key) ?? [];
+                const examEntry = list.find((e) => e.kind === "esame");
+                const examColor = examEntry ? colorForEntry(examEntry) : null;
+                return (
+                  <button
+                    key={key}
+                    onClick={() => { setOpenDay(key); resetForm(); }}
+                    className={`relative min-h-[72px] sm:min-h-[110px] p-1.5 text-left hover:bg-secondary/40 transition-colors overflow-hidden ${
+                      inMonth ? "" : "opacity-40"
+                    } ${examColor ? "" : "bg-background"}`}
+                    style={examColor ? {
+                      backgroundColor: `color-mix(in srgb, ${examColor} 10%, var(--background, white))`,
+                      borderLeft: `3px solid ${examColor}`,
+                    } : undefined}
                   >
-                    {d.getDate()}
-                  </span>
-                </div>
-                <div className="flex flex-col gap-0.5 items-stretch">
-                  {list.slice(0, 3).map(renderCellEntry)}
-                  {list.length > 3 && (
-                    <span className="font-mono text-[10px] text-muted-foreground px-1">
-                      +{list.length - 3}
-                    </span>
-                  )}
-                </div>
-              </button>
-            );
-          })}
-        </div>
+                    <div className="flex items-center justify-between mb-1">
+                      <span
+                        className={`font-mono text-xs tabular-nums ${
+                          isToday
+                            ? "bg-primary text-primary-foreground px-1.5 py-0.5 rounded"
+                            : "text-muted-foreground"
+                        }`}
+                      >
+                        {d.getDate()}
+                      </span>
+                    </div>
+                    <div className="flex flex-col gap-0.5 items-stretch">
+                      {list.slice(0, 3).map(renderCellEntry)}
+                      {list.length > 3 && (
+                        <span className="font-mono text-[10px] text-muted-foreground px-1">
+                          +{list.length - 3}
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+            {renderLegend()}
+          </>
+        )}
 
-        {/* Legend */}
-        <div className="mt-6 flex flex-wrap gap-x-4 gap-y-2 label-meta">
-          {([
-            { k: "lezione", c: "hsl(var(--foreground))" },
-            { k: "studio", c: "hsl(var(--foreground))" },
-            { k: "progetto", c: "hsl(var(--foreground))" },
-            { k: "esame", c: "hsl(var(--foreground))" },
-            { k: "lavoro", c: ORANGE },
-            { k: "ferie", c: ORANGE },
-            { k: "nota", c: "hsl(var(--foreground))" },
-          ] as { k: Kind; c: string }[]).map(({ k, c }) => {
-            const meta = KIND_META[k];
-            const Icon = meta.icon;
-            return (
-              <span key={k} className="inline-flex items-center gap-1.5">
-                <span
-                  className={`inline-flex items-center justify-center px-1.5 py-0.5 rounded ${k === "esame" ? "border-2" : "border"}`}
-                  style={{
-                    backgroundColor: `color-mix(in srgb, ${c} 10%, transparent)`,
-                    borderColor: k === "esame" ? c : `color-mix(in srgb, ${c} 30%, transparent)`,
-                    color: c,
-                  }}
-                >
-                  <Icon className="h-3 w-3" />
-                </span>
-                {meta.full}
-              </span>
-            );
-          })}
-          <span className="text-muted-foreground italic">· colori = materia</span>
-        </div>
+        {/* ── WEEK VIEW ── */}
+        {view === "week" && (
+          <>
+            <div className="grid grid-cols-7 gap-1">
+              {weekDays.map((d) => {
+                const key = fmt(d);
+                const isToday = key === todayFmt;
+                const list = byDay.get(key) ?? [];
+                const examEntry = list.find((e) => e.kind === "esame");
+                const examColor = examEntry ? colorForEntry(examEntry) : null;
+                return (
+                  <div
+                    key={key}
+                    className={`rounded-lg overflow-hidden flex flex-col ${examColor ? "" : "bg-secondary/20"}`}
+                    style={examColor ? {
+                      backgroundColor: `color-mix(in srgb, ${examColor} 8%, transparent)`,
+                      borderLeft: `3px solid ${examColor}`,
+                    } : undefined}
+                  >
+                    {/* Day header — click to open dialog */}
+                    <button
+                      onClick={() => { setOpenDay(key); resetForm(); }}
+                      className="w-full text-center py-2 hover:bg-secondary/40 transition-colors"
+                    >
+                      <div className="label-meta text-muted-foreground text-[10px]">
+                        {WEEK_NAMES[(d.getDay() + 6) % 7]}
+                      </div>
+                      <div
+                        className={`font-mono text-sm tabular-nums mt-0.5 ${
+                          isToday ? "bg-primary text-primary-foreground px-1.5 py-0.5 rounded inline-block" : ""
+                        }`}
+                      >
+                        {d.getDate()}
+                      </div>
+                    </button>
+                    {/* Entries */}
+                    <div className="flex flex-col gap-0.5 p-1 flex-1 min-h-[80px]">
+                      {list.map((e) => {
+                        const meta = KIND_META[e.kind];
+                        const color = colorForEntry(e);
+                        const courseName = e.course_id ? courseMap.get(e.course_id)?.name ?? null : null;
+                        const isExam = e.kind === "esame";
+                        const Icon = meta.icon;
+                        return (
+                          <button
+                            key={e.id}
+                            onClick={() => { setOpenDay(key); resetForm(); }}
+                            title={[meta.full, courseName, e.label].filter(Boolean).join(" · ")}
+                            className={`w-full text-left px-1.5 py-1 rounded flex items-center gap-1 ${
+                              isExam ? "border-2 font-bold" : "border"
+                            }`}
+                            style={{
+                              backgroundColor: `color-mix(in srgb, ${color} ${isExam ? 20 : 12}%, transparent)`,
+                              borderColor: isExam ? color : `color-mix(in srgb, ${color} 30%, transparent)`,
+                              color,
+                            }}
+                          >
+                            <Icon className="h-3 w-3 shrink-0" />
+                            <span className="text-[10px] truncate">{courseName ?? meta.full}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            {renderLegend()}
+          </>
+        )}
+
+        {/* ── DAY VIEW ── */}
+        {view === "day" && (() => {
+          const key = fmt(cursor);
+          const isToday = key === todayFmt;
+          const list = byDay.get(key) ?? [];
+          return (
+            <div className="max-w-lg mx-auto space-y-4">
+              {isToday && (
+                <p className="label-meta text-primary text-center">Oggi</p>
+              )}
+              {list.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-8">
+                  Nessuna annotazione per questo giorno.
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {list.map((e) => renderEntryCard(e))}
+                </div>
+              )}
+              <button
+                onClick={() => { setOpenDay(key); resetForm(); }}
+                className="w-full border border-dashed border-border rounded-lg py-3 text-sm text-muted-foreground hover:border-primary hover:text-primary transition-colors flex items-center justify-center gap-2"
+              >
+                <Plus className="h-4 w-4" /> Aggiungi annotazione
+              </button>
+            </div>
+          );
+        })()}
       </section>
 
+      {/* Dialog — used by month, week, and day view (for adding) */}
       <Dialog open={!!openDay} onOpenChange={(o) => !o && setOpenDay(null)}>
         <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -429,133 +781,10 @@ const Calendar = () => {
             {dayEntries.length === 0 && (
               <p className="text-sm text-muted-foreground">Nessuna annotazione.</p>
             )}
-            {dayEntries.map((e) => {
-              const meta = KIND_META[e.kind];
-              const c = e.course_id ? courseMap.get(e.course_id) : null;
-              const color = colorForEntry(e);
-              const list = todos[e.id] ?? [];
-              const isExam = e.kind === "esame";
-              const Icon = meta.icon;
-              return (
-                <div key={e.id} className={`rounded p-2.5 ${isExam ? "border-2" : "border border-border-soft"}`}
-                  style={isExam ? { borderColor: color, backgroundColor: `color-mix(in srgb, ${color} 8%, transparent)` } : undefined}
-                >
-                  <div className="flex items-start gap-2">
-                    <span
-                      className={`inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0 mt-0.5 ${isExam ? "border-2" : "border"}`}
-                      style={{
-                        backgroundColor: `color-mix(in srgb, ${color} ${isExam ? 20 : 10}%, transparent)`,
-                        borderColor: isExam ? color : `color-mix(in srgb, ${color} 30%, transparent)`,
-                        color,
-                      }}
-                    >
-                      <Icon className="h-3 w-3" />
-                      {isExam && <span className="uppercase tracking-tight">{meta.short}</span>}
-                    </span>
-                    <div className="flex-1 min-w-0 text-sm">
-                      <div className="font-medium" style={c ? { color } : undefined}>
-                        {meta.full}
-                        {c ? ` · ${c.name}` : ""}
-                        {e.label ? ` · ${e.label}` : ""}
-                      </div>
-                      {e.note && <div className="text-muted-foreground text-xs mt-0.5 break-words">{e.note}</div>}
-                    </div>
-                    <button
-                      onClick={() => deleteEntry(e.id)}
-                      className="text-muted-foreground hover:text-destructive p-1"
-                      aria-label="Elimina"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-
-                  {/* Todo list */}
-                  <div className="mt-2 pl-6 space-y-1">
-                    {list.map((t) => (
-                      <div key={t.id} className="flex items-center gap-2 text-sm group">
-                        <button
-                          onClick={() => toggleTodo(t)}
-                          className={`h-4 w-4 rounded border flex items-center justify-center shrink-0 ${
-                            t.done ? "bg-primary border-primary text-primary-foreground" : "border-border"
-                          }`}
-                          aria-label={t.done ? "Segna non fatta" : "Segna fatta"}
-                        >
-                          {t.done && <Check className="h-3 w-3" />}
-                        </button>
-                        <span className={`flex-1 break-words ${t.done ? "line-through text-muted-foreground" : ""}`}>
-                          {t.text}
-                        </span>
-                        <button
-                          onClick={() => deleteTodo(t)}
-                          className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-opacity"
-                          aria-label="Elimina todo"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </button>
-                      </div>
-                    ))}
-                    <div className="flex items-center gap-2 pt-1">
-                      <Input
-                        placeholder="Nuova todo…"
-                        value={newTodoText[e.id] ?? ""}
-                        onChange={(ev) => setNewTodoText((p) => ({ ...p, [e.id]: ev.target.value }))}
-                        onKeyDown={(ev) => { if (ev.key === "Enter") { ev.preventDefault(); addTodo(e.id); } }}
-                        className="h-8 text-xs"
-                      />
-                      <Button size="sm" variant="outline" className="h-8 px-2" onClick={() => addTodo(e.id)}>
-                        <Plus className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+            {dayEntries.map((e) => renderEntryCard(e))}
           </div>
 
-          {/* Add form */}
-          <div className="border-t border-border-soft pt-4 space-y-3">
-            <div className="label-meta">Aggiungi annotazione</div>
-            <Select value={newKind} onValueChange={(v) => { setNewKind(v as Kind); setNewCourse(""); }}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {(Object.keys(KIND_META) as Kind[]).map((k) => (
-                  <SelectItem key={k} value={k}>{KIND_META[k].full}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            {KIND_META[newKind].requiresCourse && (
-              <Select value={newCourse} onValueChange={setNewCourse}>
-                <SelectTrigger>
-                  <SelectValue placeholder={courses.length ? "Seleziona materia" : "Nessuna materia: aggiungine una"} />
-                </SelectTrigger>
-                <SelectContent>
-                  {courses.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      <span className="inline-flex items-center gap-2">
-                        <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: courseColor(c) }} />
-                        {c.name}
-                      </span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-
-            <Input
-              placeholder="Etichetta breve (opzionale)"
-              value={newLabel}
-              onChange={(e) => setNewLabel(e.target.value)}
-            />
-            <Input
-              placeholder="Nota (opzionale)"
-              value={newNote}
-              onChange={(e) => setNewNote(e.target.value)}
-            />
-            <Button onClick={addEntry} className="w-full">
-              <Plus className="h-4 w-4 mr-1" /> Aggiungi
-            </Button>
-          </div>
+          {renderAddForm()}
         </DialogContent>
       </Dialog>
     </main>
