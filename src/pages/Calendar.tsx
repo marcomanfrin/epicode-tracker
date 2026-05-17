@@ -668,7 +668,8 @@ const Calendar = () => {
         {/* ── WEEK VIEW ── */}
         {view === "week" && (
           <>
-            <div className="grid grid-cols-7 gap-1">
+            <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 pb-2 sm:pb-0">
+            <div className="flex gap-1 sm:grid sm:grid-cols-7" style={{ minWidth: 0 }}>
               {weekDays.map((d) => {
                 const key = fmt(d);
                 const isToday = key === todayFmt;
@@ -678,7 +679,7 @@ const Calendar = () => {
                 return (
                   <div
                     key={key}
-                    className={`rounded-lg overflow-hidden flex flex-col ${examColor ? "" : "bg-secondary/20"}`}
+                    className={`flex-none w-[48vw] sm:w-auto rounded-lg overflow-hidden flex flex-col ${examColor ? "" : "bg-secondary/20"}`}
                     style={examColor ? {
                       backgroundColor: `color-mix(in srgb, ${examColor} 8%, transparent)`,
                       borderLeft: `3px solid ${examColor}`,
@@ -731,6 +732,7 @@ const Calendar = () => {
                   </div>
                 );
               })}
+            </div>
             </div>
             {renderLegend()}
           </>
