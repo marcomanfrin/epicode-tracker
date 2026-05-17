@@ -264,39 +264,22 @@ const Calendar = () => {
   const renderCellEntry = (e: Entry) => {
     const meta = KIND_META[e.kind];
     const color = colorForEntry(e);
-    if (e.kind === "studio") {
-      return (
-        <span
-          key={e.id}
-          title={e.course_id ? courseMap.get(e.course_id)?.name : "Studio"}
-          className="h-2.5 w-2.5 rounded-full"
-          style={{ backgroundColor: color }}
-        />
-      );
-    }
-    if (e.kind === "esame") {
-      const c = e.course_id ? courseMap.get(e.course_id) : null;
-      return (
-        <span
-          key={e.id}
-          className="font-mono text-[10px] sm:text-xs px-1 rounded font-bold uppercase truncate max-w-full"
-          style={{ color }}
-          title={c?.name}
-        >
-          {(c?.name || "ES").slice(0, 8)}
-        </span>
-      );
-    }
+    const courseName = e.course_id ? courseMap.get(e.course_id)?.name ?? null : null;
     return (
       <span
         key={e.id}
-        className="font-mono text-[10px] sm:text-xs px-1 rounded"
+        title={[meta.full, courseName, e.label].filter(Boolean).join(" · ")}
+        className="font-mono text-[9px] sm:text-[10px] leading-tight px-1.5 py-0.5 rounded border w-full truncate flex items-center gap-1"
         style={{
-          backgroundColor: `color-mix(in srgb, ${color} 18%, transparent)`,
+          backgroundColor: `color-mix(in srgb, ${color} 10%, transparent)`,
+          borderColor: `color-mix(in srgb, ${color} 30%, transparent)`,
           color,
         }}
       >
-        {meta.short}
+        <span className="font-bold uppercase tracking-tight shrink-0">{meta.short}</span>
+        {courseName && (
+          <span className="truncate opacity-80 normal-case">{courseName}</span>
+        )}
       </span>
     );
   };
