@@ -39,13 +39,13 @@ type SharedEntry = {
 const ORANGE = "hsl(20 90% 55%)";
 
 const KIND_META: Record<Kind, { short: string; full: string }> = {
-  lezione:  { short: "L",    full: "Lezione" },
-  lavoro:   { short: "W",    full: "Lavoro" },
-  ferie:    { short: "X",    full: "Ferie" },
-  studio:   { short: "●",    full: "Studio" },
-  progetto: { short: "PROJ", full: "Progetto" },
-  esame:    { short: "ES",   full: "Esame" },
-  nota:     { short: "N",    full: "Nota" },
+  lezione:  { short: "LEZ",   full: "Lezione" },
+  lavoro:   { short: "LAV",   full: "Lavoro" },
+  ferie:    { short: "FERIE", full: "Ferie" },
+  studio:   { short: "STUDIO",full: "Studio" },
+  progetto: { short: "PROJ",  full: "Progetto" },
+  esame:    { short: "ESAME", full: "Esame" },
+  nota:     { short: "NOTA",  full: "Nota" },
 };
 
 const MONTH_NAMES = [
