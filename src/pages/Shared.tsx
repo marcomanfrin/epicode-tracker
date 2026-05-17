@@ -395,11 +395,11 @@ const Shared = () => {
                           {d.getDate()}
                         </span>
                       </div>
-                      <div className="flex flex-wrap gap-0.5 items-center">
-                        {list.slice(0, 5).map(renderCellEntry)}
-                        {list.length > 5 && (
-                          <span className="font-mono text-[10px] text-muted-foreground">
-                            +{list.length - 5}
+                      <div className="flex flex-col gap-0.5 items-stretch">
+                        {list.slice(0, 3).map(renderCellEntry)}
+                        {list.length > 3 && (
+                          <span className="font-mono text-[10px] text-muted-foreground px-1">
+                            +{list.length - 3}
                           </span>
                         )}
                       </div>
