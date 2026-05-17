@@ -43,13 +43,13 @@ type Todo = {
 const ORANGE = "hsl(20 90% 55%)";
 
 const KIND_META: Record<Kind, { short: string; full: string; requiresCourse: boolean }> = {
-  lezione:  { short: "L",    full: "Lezione",  requiresCourse: true  },
-  lavoro:   { short: "W",    full: "Lavoro",   requiresCourse: false },
-  ferie:    { short: "X",    full: "Ferie",    requiresCourse: false },
-  studio:   { short: "●",    full: "Studio",   requiresCourse: true  },
-  progetto: { short: "PROJ", full: "Progetto", requiresCourse: true  },
-  esame:    { short: "ES",   full: "Esame",    requiresCourse: true  },
-  nota:     { short: "N",    full: "Nota",     requiresCourse: false },
+  lezione:  { short: "LEZ",   full: "Lezione",  requiresCourse: true  },
+  lavoro:   { short: "LAV",   full: "Lavoro",   requiresCourse: false },
+  ferie:    { short: "FERIE", full: "Ferie",    requiresCourse: false },
+  studio:   { short: "STUDIO",full: "Studio",   requiresCourse: true  },
+  progetto: { short: "PROJ",  full: "Progetto", requiresCourse: true  },
+  esame:    { short: "ESAME", full: "Esame",    requiresCourse: true  },
+  nota:     { short: "NOTA",  full: "Nota",     requiresCourse: false },
 };
 
 const MONTH_NAMES = [
