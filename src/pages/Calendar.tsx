@@ -43,13 +43,13 @@ type Todo = {
 const ORANGE = "hsl(20 90% 55%)";
 
 const KIND_META: Record<Kind, { short: string; full: string; requiresCourse: boolean }> = {
-  lezione:  { short: "L",    full: "Lezione",  requiresCourse: true  },
-  lavoro:   { short: "W",    full: "Lavoro",   requiresCourse: false },
-  ferie:    { short: "X",    full: "Ferie",    requiresCourse: false },
-  studio:   { short: "●",    full: "Studio",   requiresCourse: true  },
-  progetto: { short: "PROJ", full: "Progetto", requiresCourse: true  },
-  esame:    { short: "ES",   full: "Esame",    requiresCourse: true  },
-  nota:     { short: "N",    full: "Nota",     requiresCourse: false },
+  lezione:  { short: "LEZ",   full: "Lezione",  requiresCourse: true  },
+  lavoro:   { short: "LAV",   full: "Lavoro",   requiresCourse: false },
+  ferie:    { short: "FERIE", full: "Ferie",    requiresCourse: false },
+  studio:   { short: "STUDIO",full: "Studio",   requiresCourse: true  },
+  progetto: { short: "PROJ",  full: "Progetto", requiresCourse: true  },
+  esame:    { short: "ESAME", full: "Esame",    requiresCourse: true  },
+  nota:     { short: "NOTA",  full: "Nota",     requiresCourse: false },
 };
 
 const MONTH_NAMES = [
@@ -264,39 +264,22 @@ const Calendar = () => {
   const renderCellEntry = (e: Entry) => {
     const meta = KIND_META[e.kind];
     const color = colorForEntry(e);
-    if (e.kind === "studio") {
-      return (
-        <span
-          key={e.id}
-          title={e.course_id ? courseMap.get(e.course_id)?.name : "Studio"}
-          className="h-2.5 w-2.5 rounded-full"
-          style={{ backgroundColor: color }}
-        />
-      );
-    }
-    if (e.kind === "esame") {
-      const c = e.course_id ? courseMap.get(e.course_id) : null;
-      return (
-        <span
-          key={e.id}
-          className="font-mono text-[10px] sm:text-xs px-1 rounded font-bold uppercase truncate max-w-full"
-          style={{ color }}
-          title={c?.name}
-        >
-          {(c?.name || "ES").slice(0, 8)}
-        </span>
-      );
-    }
+    const courseName = e.course_id ? courseMap.get(e.course_id)?.name ?? null : null;
     return (
       <span
         key={e.id}
-        className="font-mono text-[10px] sm:text-xs px-1 rounded"
+        title={[meta.full, courseName, e.label].filter(Boolean).join(" · ")}
+        className="font-mono text-[9px] sm:text-[10px] leading-tight px-1.5 py-0.5 rounded border w-full truncate flex items-center gap-1"
         style={{
-          backgroundColor: `color-mix(in srgb, ${color} 18%, transparent)`,
+          backgroundColor: `color-mix(in srgb, ${color} 10%, transparent)`,
+          borderColor: `color-mix(in srgb, ${color} 30%, transparent)`,
           color,
         }}
       >
-        {meta.short}
+        <span className="font-bold uppercase tracking-tight shrink-0">{meta.short}</span>
+        {courseName && (
+          <span className="truncate opacity-80 normal-case">{courseName}</span>
+        )}
       </span>
     );
   };
@@ -371,11 +354,11 @@ const Calendar = () => {
                     {d.getDate()}
                   </span>
                 </div>
-                <div className="flex flex-wrap gap-0.5 items-center">
-                  {list.slice(0, 5).map(renderCellEntry)}
-                  {list.length > 5 && (
-                    <span className="font-mono text-[10px] text-muted-foreground">
-                      +{list.length - 5}
+                <div className="flex flex-col gap-0.5 items-stretch">
+                  {list.slice(0, 3).map(renderCellEntry)}
+                  {list.length > 3 && (
+                    <span className="font-mono text-[10px] text-muted-foreground px-1">
+                      +{list.length - 3}
                     </span>
                   )}
                 </div>
@@ -386,22 +369,30 @@ const Calendar = () => {
 
         {/* Legend */}
         <div className="mt-6 flex flex-wrap gap-x-4 gap-y-2 label-meta">
-          <span className="inline-flex items-center gap-1.5">
-            <span className="font-mono text-[10px] px-1 rounded" style={{ backgroundColor: `color-mix(in srgb, ${ORANGE} 18%, transparent)`, color: ORANGE }}>W</span>
-            Lavoro
-          </span>
-          <span className="inline-flex items-center gap-1.5">
-            <span className="font-mono text-[10px] px-1 rounded" style={{ backgroundColor: `color-mix(in srgb, ${ORANGE} 18%, transparent)`, color: ORANGE }}>X</span>
-            Ferie
-          </span>
-          <span className="inline-flex items-center gap-1.5">
-            <span className="h-2.5 w-2.5 rounded-full bg-foreground inline-block" />
-            Studio (colore materia)
-          </span>
-          <span className="inline-flex items-center gap-1.5">
-            <span className="font-mono text-[10px] px-1 rounded bg-foreground/10">L / PROJ / ES</span>
-            Lezione, Progetto, Esame (colore materia)
-          </span>
+          {([
+            { k: "lezione", c: "hsl(var(--foreground))", l: "Lezione" },
+            { k: "studio", c: "hsl(var(--foreground))", l: "Studio" },
+            { k: "progetto", c: "hsl(var(--foreground))", l: "Progetto" },
+            { k: "esame", c: "hsl(var(--foreground))", l: "Esame" },
+            { k: "lavoro", c: ORANGE, l: "Lavoro" },
+            { k: "ferie", c: ORANGE, l: "Ferie" },
+            { k: "nota", c: "hsl(var(--foreground))", l: "Nota" },
+          ] as { k: Kind; c: string; l: string }[]).map(({ k, c, l }) => (
+            <span key={k} className="inline-flex items-center gap-1.5">
+              <span
+                className="font-mono text-[9px] font-bold px-1.5 py-0.5 rounded border"
+                style={{
+                  backgroundColor: `color-mix(in srgb, ${c} 10%, transparent)`,
+                  borderColor: `color-mix(in srgb, ${c} 30%, transparent)`,
+                  color: c,
+                }}
+              >
+                {KIND_META[k].short}
+              </span>
+              {l}
+            </span>
+          ))}
+          <span className="text-muted-foreground italic">· colori = materia</span>
         </div>
       </section>
 
@@ -427,20 +418,20 @@ const Calendar = () => {
               return (
                 <div key={e.id} className="border border-border-soft rounded p-2.5">
                   <div className="flex items-start gap-2">
-                    {e.kind === "studio" ? (
-                      <span className="h-3 w-3 rounded-full mt-1.5 shrink-0" style={{ backgroundColor: color }} />
-                    ) : (
-                      <span
-                        className="font-mono text-[10px] px-1 rounded shrink-0 mt-0.5"
-                        style={{ backgroundColor: `color-mix(in srgb, ${color} 18%, transparent)`, color }}
-                      >
-                        {meta.short}
-                      </span>
-                    )}
+                    <span
+                      className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded border shrink-0 mt-0.5"
+                      style={{
+                        backgroundColor: `color-mix(in srgb, ${color} 10%, transparent)`,
+                        borderColor: `color-mix(in srgb, ${color} 30%, transparent)`,
+                        color,
+                      }}
+                    >
+                      {meta.short}
+                    </span>
                     <div className="flex-1 min-w-0 text-sm">
                       <div className="font-medium" style={c ? { color } : undefined}>
-                        {e.kind === "esame" && c ? c.name : meta.full}
-                        {e.kind !== "esame" && c ? ` · ${c.name}` : ""}
+                        {meta.full}
+                        {c ? ` · ${c.name}` : ""}
                         {e.label ? ` · ${e.label}` : ""}
                       </div>
                       {e.note && <div className="text-muted-foreground text-xs mt-0.5 break-words">{e.note}</div>}
