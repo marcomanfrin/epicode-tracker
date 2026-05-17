@@ -449,7 +449,9 @@ const Shared = () => {
               {entries.length > 0 && (
                 <div className="mt-10 space-y-6">
                   <div className="hairline" />
-                  {Array.from(new Set(entries.map((e) => e.date))).sort().map((dateKey) => {
+                  {Array.from(new Set(entries.map((e) => e.date)))
+                    .filter((dateKey) => new Date(dateKey + "T00:00:00") >= new Date(new Date().toDateString()))
+                    .sort().map((dateKey) => {
                     const dayList = byDay.get(dateKey) ?? [];
                     const dateObj = new Date(dateKey + "T00:00:00");
                     const label = dateObj.toLocaleDateString("it-IT", {
