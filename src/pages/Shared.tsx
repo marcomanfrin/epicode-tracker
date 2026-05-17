@@ -410,22 +410,30 @@ const Shared = () => {
 
               {/* Legend */}
               <div className="mt-6 flex flex-wrap gap-x-4 gap-y-2 label-meta">
-                <span className="inline-flex items-center gap-1.5">
-                  <span className="font-mono text-[10px] px-1 rounded" style={{ backgroundColor: `color-mix(in srgb, ${ORANGE} 18%, transparent)`, color: ORANGE }}>W</span>
-                  Lavoro
-                </span>
-                <span className="inline-flex items-center gap-1.5">
-                  <span className="font-mono text-[10px] px-1 rounded" style={{ backgroundColor: `color-mix(in srgb, ${ORANGE} 18%, transparent)`, color: ORANGE }}>X</span>
-                  Ferie
-                </span>
-                <span className="inline-flex items-center gap-1.5">
-                  <span className="h-2.5 w-2.5 rounded-full bg-foreground inline-block" />
-                  Studio (colore materia)
-                </span>
-                <span className="inline-flex items-center gap-1.5">
-                  <span className="font-mono text-[10px] px-1 rounded bg-foreground/10">L / PROJ / ES</span>
-                  Lezione, Progetto, Esame (colore materia)
-                </span>
+                {([
+                  { k: "lezione", c: "hsl(var(--foreground))", l: "Lezione" },
+                  { k: "studio", c: "hsl(var(--foreground))", l: "Studio" },
+                  { k: "progetto", c: "hsl(var(--foreground))", l: "Progetto" },
+                  { k: "esame", c: "hsl(var(--foreground))", l: "Esame" },
+                  { k: "lavoro", c: ORANGE, l: "Lavoro" },
+                  { k: "ferie", c: ORANGE, l: "Ferie" },
+                  { k: "nota", c: "hsl(var(--foreground))", l: "Nota" },
+                ] as { k: Kind; c: string; l: string }[]).map(({ k, c, l }) => (
+                  <span key={k} className="inline-flex items-center gap-1.5">
+                    <span
+                      className="font-mono text-[9px] font-bold px-1.5 py-0.5 rounded border"
+                      style={{
+                        backgroundColor: `color-mix(in srgb, ${c} 10%, transparent)`,
+                        borderColor: `color-mix(in srgb, ${c} 30%, transparent)`,
+                        color: c,
+                      }}
+                    >
+                      {KIND_META[k].short}
+                    </span>
+                    {l}
+                  </span>
+                ))}
+                <span className="text-muted-foreground italic">· colori = materia</span>
               </div>
 
               {/* Day detail list */}
