@@ -479,8 +479,8 @@ const Shared = () => {
                                   )}
                                   <div className="flex-1 min-w-0 text-sm">
                                     <div className="font-medium" style={e.course_name ? { color } : undefined}>
-                                      {e.kind === "esame" && e.course_name ? e.course_name : meta.full}
-                                      {e.kind !== "esame" && e.course_name ? ` · ${e.course_name}` : ""}
+                                      {meta.full}
+                                      {e.course_name ? ` · ${e.course_name}` : ""}
                                       {e.label ? ` · ${e.label}` : ""}
                                     </div>
                                     {e.note && <div className="text-muted-foreground text-xs mt-0.5 break-words">{e.note}</div>}
