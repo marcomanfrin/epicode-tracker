@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { ChevronLeft, ChevronRight, ArrowLeft, Plus, Trash2, Check } from "lucide-react";
+import { ChevronLeft, ChevronRight, ArrowLeft, Plus, Trash2, Check, BookOpen, Briefcase, Sun, Brain, FolderKanban, ClipboardCheck, StickyNote, type LucideIcon } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -42,14 +42,14 @@ type Todo = {
 
 const ORANGE = "hsl(20 90% 55%)";
 
-const KIND_META: Record<Kind, { short: string; full: string; requiresCourse: boolean }> = {
-  lezione:  { short: "LEZ",   full: "Lezione",  requiresCourse: true  },
-  lavoro:   { short: "LAV",   full: "Lavoro",   requiresCourse: false },
-  ferie:    { short: "FERIE", full: "Ferie",    requiresCourse: false },
-  studio:   { short: "STUDIO",full: "Studio",   requiresCourse: true  },
-  progetto: { short: "PROJ",  full: "Progetto", requiresCourse: true  },
-  esame:    { short: "ESAME", full: "Esame",    requiresCourse: true  },
-  nota:     { short: "NOTA",  full: "Nota",     requiresCourse: false },
+const KIND_META: Record<Kind, { short: string; full: string; requiresCourse: boolean; icon: LucideIcon }> = {
+  lezione:  { short: "LEZ",   full: "Lezione",  requiresCourse: true,  icon: BookOpen       },
+  lavoro:   { short: "LAV",   full: "Lavoro",   requiresCourse: false, icon: Briefcase      },
+  ferie:    { short: "FERIE", full: "Ferie",    requiresCourse: false, icon: Sun            },
+  studio:   { short: "STUDIO",full: "Studio",   requiresCourse: true,  icon: Brain          },
+  progetto: { short: "PROJ",  full: "Progetto", requiresCourse: true,  icon: FolderKanban   },
+  esame:    { short: "ESAME", full: "Esame",    requiresCourse: true,  icon: ClipboardCheck },
+  nota:     { short: "NOTA",  full: "Nota",     requiresCourse: false, icon: StickyNote     },
 };
 
 const MONTH_NAMES = [
@@ -265,21 +265,30 @@ const Calendar = () => {
     const meta = KIND_META[e.kind];
     const color = colorForEntry(e);
     const courseName = e.course_id ? courseMap.get(e.course_id)?.name ?? null : null;
+    const isExam = e.kind === "esame";
+    const Icon = meta.icon;
     return (
       <span
         key={e.id}
         title={[meta.full, courseName, e.label].filter(Boolean).join(" · ")}
-        className="font-mono text-[9px] sm:text-[10px] leading-tight px-1.5 py-0.5 rounded border w-full truncate flex items-center gap-1"
+        className={`leading-tight px-1.5 py-0.5 rounded w-full flex items-center gap-1 ${
+          isExam
+            ? "border-2 font-bold text-[10px] sm:text-[11px]"
+            : "border font-mono text-[9px] sm:text-[10px] truncate"
+        }`}
         style={{
-          backgroundColor: `color-mix(in srgb, ${color} 10%, transparent)`,
-          borderColor: `color-mix(in srgb, ${color} 30%, transparent)`,
+          backgroundColor: isExam
+            ? `color-mix(in srgb, ${color} 22%, transparent)`
+            : `color-mix(in srgb, ${color} 10%, transparent)`,
+          borderColor: isExam ? color : `color-mix(in srgb, ${color} 30%, transparent)`,
           color,
         }}
       >
-        <span className="font-bold uppercase tracking-tight shrink-0">{meta.short}</span>
-        {courseName && (
-          <span className="truncate opacity-80 normal-case">{courseName}</span>
-        )}
+        <Icon className="h-2.5 w-2.5 shrink-0" />
+        {isExam
+          ? <span className="truncate uppercase tracking-tight">{courseName ?? meta.full}</span>
+          : courseName && <span className="truncate opacity-80 normal-case">{courseName}</span>
+        }
       </span>
     );
   };
@@ -335,13 +344,19 @@ const Calendar = () => {
             const inMonth = d.getMonth() === cursor.getMonth();
             const isToday = key === fmt(today);
             const list = byDay.get(key) ?? [];
+            const examEntry = list.find((e) => e.kind === "esame");
+            const examColor = examEntry ? colorForEntry(examEntry) : null;
             return (
               <button
                 key={key}
                 onClick={() => { setOpenDay(key); resetForm(); }}
-                className={`relative min-h-[72px] sm:min-h-[110px] p-1.5 text-left bg-background hover:bg-secondary/40 transition-colors overflow-hidden ${
+                className={`relative min-h-[72px] sm:min-h-[110px] p-1.5 text-left hover:bg-secondary/40 transition-colors overflow-hidden ${
                   inMonth ? "" : "opacity-40"
-                }`}
+                } ${examColor ? "" : "bg-background"}`}
+                style={examColor ? {
+                  backgroundColor: `color-mix(in srgb, ${examColor} 10%, var(--background, white))`,
+                  borderLeft: `3px solid ${examColor}`,
+                } : undefined}
               >
                 <div className="flex items-center justify-between mb-1">
                   <span
@@ -370,28 +385,32 @@ const Calendar = () => {
         {/* Legend */}
         <div className="mt-6 flex flex-wrap gap-x-4 gap-y-2 label-meta">
           {([
-            { k: "lezione", c: "hsl(var(--foreground))", l: "Lezione" },
-            { k: "studio", c: "hsl(var(--foreground))", l: "Studio" },
-            { k: "progetto", c: "hsl(var(--foreground))", l: "Progetto" },
-            { k: "esame", c: "hsl(var(--foreground))", l: "Esame" },
-            { k: "lavoro", c: ORANGE, l: "Lavoro" },
-            { k: "ferie", c: ORANGE, l: "Ferie" },
-            { k: "nota", c: "hsl(var(--foreground))", l: "Nota" },
-          ] as { k: Kind; c: string; l: string }[]).map(({ k, c, l }) => (
-            <span key={k} className="inline-flex items-center gap-1.5">
-              <span
-                className="font-mono text-[9px] font-bold px-1.5 py-0.5 rounded border"
-                style={{
-                  backgroundColor: `color-mix(in srgb, ${c} 10%, transparent)`,
-                  borderColor: `color-mix(in srgb, ${c} 30%, transparent)`,
-                  color: c,
-                }}
-              >
-                {KIND_META[k].short}
+            { k: "lezione", c: "hsl(var(--foreground))" },
+            { k: "studio", c: "hsl(var(--foreground))" },
+            { k: "progetto", c: "hsl(var(--foreground))" },
+            { k: "esame", c: "hsl(var(--foreground))" },
+            { k: "lavoro", c: ORANGE },
+            { k: "ferie", c: ORANGE },
+            { k: "nota", c: "hsl(var(--foreground))" },
+          ] as { k: Kind; c: string }[]).map(({ k, c }) => {
+            const meta = KIND_META[k];
+            const Icon = meta.icon;
+            return (
+              <span key={k} className="inline-flex items-center gap-1.5">
+                <span
+                  className={`inline-flex items-center justify-center px-1.5 py-0.5 rounded ${k === "esame" ? "border-2" : "border"}`}
+                  style={{
+                    backgroundColor: `color-mix(in srgb, ${c} 10%, transparent)`,
+                    borderColor: k === "esame" ? c : `color-mix(in srgb, ${c} 30%, transparent)`,
+                    color: c,
+                  }}
+                >
+                  <Icon className="h-3 w-3" />
+                </span>
+                {meta.full}
               </span>
-              {l}
-            </span>
-          ))}
+            );
+          })}
           <span className="text-muted-foreground italic">· colori = materia</span>
         </div>
       </section>
@@ -415,18 +434,23 @@ const Calendar = () => {
               const c = e.course_id ? courseMap.get(e.course_id) : null;
               const color = colorForEntry(e);
               const list = todos[e.id] ?? [];
+              const isExam = e.kind === "esame";
+              const Icon = meta.icon;
               return (
-                <div key={e.id} className="border border-border-soft rounded p-2.5">
+                <div key={e.id} className={`rounded p-2.5 ${isExam ? "border-2" : "border border-border-soft"}`}
+                  style={isExam ? { borderColor: color, backgroundColor: `color-mix(in srgb, ${color} 8%, transparent)` } : undefined}
+                >
                   <div className="flex items-start gap-2">
                     <span
-                      className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded border shrink-0 mt-0.5"
+                      className={`inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0 mt-0.5 ${isExam ? "border-2" : "border"}`}
                       style={{
-                        backgroundColor: `color-mix(in srgb, ${color} 10%, transparent)`,
-                        borderColor: `color-mix(in srgb, ${color} 30%, transparent)`,
+                        backgroundColor: `color-mix(in srgb, ${color} ${isExam ? 20 : 10}%, transparent)`,
+                        borderColor: isExam ? color : `color-mix(in srgb, ${color} 30%, transparent)`,
                         color,
                       }}
                     >
-                      {meta.short}
+                      <Icon className="h-3 w-3" />
+                      {isExam && <span className="uppercase tracking-tight">{meta.short}</span>}
                     </span>
                     <div className="flex-1 min-w-0 text-sm">
                       <div className="font-medium" style={c ? { color } : undefined}>
