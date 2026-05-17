@@ -418,16 +418,16 @@ const Calendar = () => {
               return (
                 <div key={e.id} className="border border-border-soft rounded p-2.5">
                   <div className="flex items-start gap-2">
-                    {e.kind === "studio" ? (
-                      <span className="h-3 w-3 rounded-full mt-1.5 shrink-0" style={{ backgroundColor: color }} />
-                    ) : (
-                      <span
-                        className="font-mono text-[10px] px-1 rounded shrink-0 mt-0.5"
-                        style={{ backgroundColor: `color-mix(in srgb, ${color} 18%, transparent)`, color }}
-                      >
-                        {meta.short}
-                      </span>
-                    )}
+                    <span
+                      className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded border shrink-0 mt-0.5"
+                      style={{
+                        backgroundColor: `color-mix(in srgb, ${color} 10%, transparent)`,
+                        borderColor: `color-mix(in srgb, ${color} 30%, transparent)`,
+                        color,
+                      }}
+                    >
+                      {meta.short}
+                    </span>
                     <div className="flex-1 min-w-0 text-sm">
                       <div className="font-medium" style={c ? { color } : undefined}>
                         {meta.full}
