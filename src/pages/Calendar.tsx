@@ -430,8 +430,8 @@ const Calendar = () => {
                     )}
                     <div className="flex-1 min-w-0 text-sm">
                       <div className="font-medium" style={c ? { color } : undefined}>
-                        {e.kind === "esame" && c ? c.name : meta.full}
-                        {e.kind !== "esame" && c ? ` · ${c.name}` : ""}
+                        {meta.full}
+                        {c ? ` · ${c.name}` : ""}
                         {e.label ? ` · ${e.label}` : ""}
                       </div>
                       {e.note && <div className="text-muted-foreground text-xs mt-0.5 break-words">{e.note}</div>}
