@@ -20,6 +20,7 @@ type Course = {
   fatto: number;
   caricato: number;
   pos: number;
+  color: string | null;
 };
 
 type Kind = "lezione" | "lavoro" | "ferie" | "studio" | "progetto" | "esame" | "nota";
