@@ -515,14 +515,32 @@ const Calendar = () => {
     </div>
   );
 
-  const renderLegend = () => courses.length === 0 ? null : (
-    <div className="mt-6 flex flex-wrap gap-x-4 gap-y-2 label-meta">
-      {courses.map((c) => (
-        <span key={c.id} className="inline-flex items-center gap-1.5">
-          <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: courseColor(c) }} />
-          {c.name}
-        </span>
-      ))}
+  const LEGEND_KINDS: Kind[] = ["studio", "lezione", "progetto", "esame"];
+
+  const renderLegend = () => (
+    <div className="mt-6 space-y-2">
+      {courses.length > 0 && (
+        <div className="flex flex-wrap gap-x-4 gap-y-2 label-meta">
+          {courses.map((c) => (
+            <span key={c.id} className="inline-flex items-center gap-1.5">
+              <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: courseColor(c) }} />
+              {c.name}
+            </span>
+          ))}
+        </div>
+      )}
+      <div className="flex flex-wrap gap-x-4 gap-y-2 label-meta">
+        {LEGEND_KINDS.map((k) => {
+          const meta = KIND_META[k];
+          const Icon = meta.icon;
+          return (
+            <span key={k} className="inline-flex items-center gap-1.5">
+              <Icon className="h-3 w-3 shrink-0" />
+              {meta.full}
+            </span>
+          );
+        })}
+      </div>
     </div>
   );
 
