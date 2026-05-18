@@ -113,33 +113,30 @@ const Shared = () => {
   const courseColorById = useMemo(() => {
     const map = new Map<string, string>();
     courses.forEach((c) => {
-      if (c.color) map.set(c.id, c.color);
-    });
-    entries.forEach((e) => {
-      if (e.course_id && e.course_color && !map.has(e.course_id)) {
-        map.set(e.course_id, e.course_color);
-      }
+      map.set(c.id, courseColor({ color: c.color, position: c.pos }));
     });
     return map;
-  }, [courses, entries]);
+  }, [courses]);
 
   const courseColorMap = useMemo(() => {
-    const list: { name: string; color: string }[] = [];
+    const list: { id: string; name: string; color: string }[] = [];
     const seen = new Set<string>();
     courses.forEach((c) => {
-      const color = c.color ?? courseColorById.get(c.id);
-      if (!color || seen.has(c.id)) return;
       seen.add(c.id);
-      list.push({ name: c.name, color });
+      list.push({ id: c.id, name: c.name, color: courseColor({ color: c.color, position: c.pos }) });
     });
     entries.forEach((e) => {
-      if (e.course_id && e.course_name && e.course_color && !seen.has(e.course_id)) {
+      if (e.course_id && !seen.has(e.course_id)) {
         seen.add(e.course_id);
-        list.push({ name: e.course_name, color: e.course_color });
+        list.push({
+          id: e.course_id,
+          name: e.course_name ?? "—",
+          color: e.course_color ?? courseColor({ color: null, position: list.length }),
+        });
       }
     });
     return list.sort((a, b) => a.name.localeCompare(b.name));
-  }, [courses, entries, courseColorById]);
+  }, [courses, entries]);
 
   const byDay = useMemo(() => {
     const map = new Map<string, SharedEntry[]>();
