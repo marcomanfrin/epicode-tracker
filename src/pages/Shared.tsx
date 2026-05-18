@@ -188,6 +188,15 @@ const Shared = () => {
     });
   }, [view, cursor]);
 
+  const cellLabel = (e: SharedEntry): string => {
+    const full = KIND_META[e.kind].full;
+    if (e.kind === "lavoro" || e.kind === "ferie" || e.kind === "nota") return full;
+    if (e.course_name && (e.kind === "studio" || e.kind === "lezione" || e.kind === "progetto")) {
+      return `${full} - ${e.course_name}`;
+    }
+    return e.course_name ?? full;
+  };
+
   const colorForEntry = (e: SharedEntry): string => {
     if (e.kind === "lavoro" || e.kind === "ferie") return ORANGE;
     if (e.course_color) return e.course_color;
@@ -220,7 +229,7 @@ const Shared = () => {
         <Icon className="h-2.5 w-2.5 shrink-0" />
         {isExam
           ? <span className="truncate uppercase tracking-tight">{e.course_name ?? meta.full}</span>
-          : e.course_name && <span className="truncate opacity-80 normal-case">{e.course_name}</span>
+          : <span className="truncate opacity-80 normal-case">{cellLabel(e)}</span>
         }
       </span>
     );
@@ -633,7 +642,7 @@ const Shared = () => {
                                     }}
                                   >
                                     <Icon className="h-3 w-3 shrink-0" />
-                                    <span className="text-[10px] truncate">{e.course_name ?? meta.full}</span>
+                                    <span className="text-[10px] truncate">{isExam ? (e.course_name ?? meta.full) : cellLabel(e)}</span>
                                   </button>
                                 );
                               })}

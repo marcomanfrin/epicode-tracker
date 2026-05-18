@@ -515,36 +515,14 @@ const Calendar = () => {
     </div>
   );
 
-  const renderLegend = () => (
+  const renderLegend = () => courses.length === 0 ? null : (
     <div className="mt-6 flex flex-wrap gap-x-4 gap-y-2 label-meta">
-      {([
-        { k: "lezione", c: "hsl(var(--foreground))" },
-        { k: "studio", c: "hsl(var(--foreground))" },
-        { k: "progetto", c: "hsl(var(--foreground))" },
-        { k: "esame", c: "hsl(var(--foreground))" },
-        { k: "lavoro", c: ORANGE },
-        { k: "ferie", c: ORANGE },
-        { k: "nota", c: "hsl(var(--foreground))" },
-      ] as { k: Kind; c: string }[]).map(({ k, c }) => {
-        const meta = KIND_META[k];
-        const Icon = meta.icon;
-        return (
-          <span key={k} className="inline-flex items-center gap-1.5">
-            <span
-              className={`inline-flex items-center justify-center px-1.5 py-0.5 rounded ${k === "esame" ? "border-2" : "border"}`}
-              style={{
-                backgroundColor: `color-mix(in srgb, ${c} 10%, transparent)`,
-                borderColor: k === "esame" ? c : `color-mix(in srgb, ${c} 30%, transparent)`,
-                color: c,
-              }}
-            >
-              <Icon className="h-3 w-3" />
-            </span>
-            {meta.full}
-          </span>
-        );
-      })}
-      <span className="text-muted-foreground italic">· colori = materia</span>
+      {courses.map((c) => (
+        <span key={c.id} className="inline-flex items-center gap-1.5">
+          <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: courseColor(c) }} />
+          {c.name}
+        </span>
+      ))}
     </div>
   );
 
