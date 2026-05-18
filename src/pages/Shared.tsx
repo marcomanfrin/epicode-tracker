@@ -219,11 +219,11 @@ const Shared = () => {
 
   const colorForEntry = (e: SharedEntry): string => {
     if (e.kind === "lavoro" || e.kind === "ferie") return ORANGE;
-    if (e.course_color) return e.course_color;
     if (e.course_id) {
       const c = courseColorById.get(e.course_id);
       if (c) return c;
     }
+    if (e.course_color) return e.course_color;
     return "hsl(var(--foreground))";
   };
 
