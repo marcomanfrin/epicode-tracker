@@ -682,31 +682,6 @@ const Shared = () => {
                 );
               })()}
 
-              {/* Upcoming events list (month/week only) */}
-              {view !== "day" && entries.length > 0 && (
-                <div className="mt-10 space-y-6">
-                  <div className="hairline" />
-                  {Array.from(new Set(entries.map((e) => e.date)))
-                    .filter((dateKey) => new Date(dateKey + "T00:00:00") >= new Date(new Date().toDateString()))
-                    .sort()
-                    .map((dateKey) => {
-                      const dayList = byDay.get(dateKey) ?? [];
-                      const dateObj = new Date(dateKey + "T00:00:00");
-                      const label = dateObj.toLocaleDateString("it-IT", {
-                        weekday: "long", day: "numeric", month: "long", year: "numeric",
-                      });
-                      return (
-                        <div key={dateKey}>
-                          <h4 className="font-serif text-xl mb-3">{label}</h4>
-                          <div className="space-y-2">
-                            {dayList.map((e) => renderEntryCard(e))}
-                          </div>
-                          <div className="hairline mt-6" />
-                        </div>
-                      );
-                    })}
-                </div>
-              )}
             </div>
           </>
         )}
