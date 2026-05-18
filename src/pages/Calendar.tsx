@@ -221,6 +221,15 @@ const Calendar = () => {
     return m;
   }, [courses]);
 
+  const cellLabel = (e: Entry, courseName: string | null): string => {
+    const full = KIND_META[e.kind].full;
+    if (e.kind === "lavoro" || e.kind === "ferie" || e.kind === "nota") return full;
+    if (courseName && (e.kind === "studio" || e.kind === "lezione" || e.kind === "progetto")) {
+      return `${full} - ${courseName}`;
+    }
+    return courseName ?? full;
+  };
+
   const colorForEntry = (e: Entry): string => {
     if (e.kind === "lavoro" || e.kind === "ferie") return ORANGE;
     if (e.course_id) {
@@ -373,7 +382,7 @@ const Calendar = () => {
         <Icon className="h-2.5 w-2.5 shrink-0" />
         {isExam
           ? <span className="truncate uppercase tracking-tight">{courseName ?? meta.full}</span>
-          : courseName && <span className="truncate opacity-80 normal-case">{courseName}</span>
+          : <span className="truncate opacity-80 normal-case">{cellLabel(e, courseName)}</span>
         }
       </span>
     );
@@ -724,7 +733,7 @@ const Calendar = () => {
                             }}
                           >
                             <Icon className="h-3 w-3 shrink-0" />
-                            <span className="text-[10px] truncate">{courseName ?? meta.full}</span>
+                            <span className="text-[10px] truncate">{isExam ? (courseName ?? meta.full) : cellLabel(e, courseName)}</span>
                           </button>
                         );
                       })}
