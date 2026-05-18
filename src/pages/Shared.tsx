@@ -108,6 +108,16 @@ const Shared = () => {
     return { fatto, caricato, daCaricare: r(totale - caricato), totale };
   }, [courses]);
 
+  const courseColorMap = useMemo(() => {
+    const map = new Map<string, { name: string; color: string }>();
+    entries.forEach((e) => {
+      if (e.course_id && e.course_name && e.course_color) {
+        map.set(e.course_id, { name: e.course_name, color: e.course_color });
+      }
+    });
+    return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
+  }, [entries]);
+
   const byDay = useMemo(() => {
     const map = new Map<string, SharedEntry[]>();
     entries.forEach((e) => {
@@ -269,36 +279,14 @@ const Shared = () => {
     );
   };
 
-  const renderLegend = () => (
+  const renderLegend = () => courseColorMap.length === 0 ? null : (
     <div className="mt-6 flex flex-wrap gap-x-4 gap-y-2 label-meta">
-      {([
-        { k: "lezione", c: "hsl(var(--foreground))" },
-        { k: "studio",  c: "hsl(var(--foreground))" },
-        { k: "progetto",c: "hsl(var(--foreground))" },
-        { k: "esame",   c: "hsl(var(--foreground))" },
-        { k: "lavoro",  c: ORANGE },
-        { k: "ferie",   c: ORANGE },
-        { k: "nota",    c: "hsl(var(--foreground))" },
-      ] as { k: Kind; c: string }[]).map(({ k, c }) => {
-        const meta = KIND_META[k];
-        const Icon = meta.icon;
-        return (
-          <span key={k} className="inline-flex items-center gap-1.5">
-            <span
-              className={`inline-flex items-center justify-center px-1.5 py-0.5 rounded ${k === "esame" ? "border-2" : "border"}`}
-              style={{
-                backgroundColor: `color-mix(in srgb, ${c} 10%, transparent)`,
-                borderColor: k === "esame" ? c : `color-mix(in srgb, ${c} 30%, transparent)`,
-                color: c,
-              }}
-            >
-              <Icon className="h-3 w-3" />
-            </span>
-            {meta.full}
-          </span>
-        );
-      })}
-      <span className="text-muted-foreground italic">· colori = materia</span>
+      {courseColorMap.map(({ name, color }) => (
+        <span key={name} className="inline-flex items-center gap-1.5">
+          <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
+          {name}
+        </span>
+      ))}
     </div>
   );
 
