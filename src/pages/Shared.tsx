@@ -20,6 +20,7 @@ type Course = {
   fatto: number;
   caricato: number;
   pos: number;
+  color: string | null;
 };
 
 type Kind = "lezione" | "lavoro" | "ferie" | "studio" | "progetto" | "esame" | "nota";
@@ -108,15 +109,36 @@ const Shared = () => {
     return { fatto, caricato, daCaricare: r(totale - caricato), totale };
   }, [courses]);
 
-  const courseColorMap = useMemo(() => {
-    const map = new Map<string, { name: string; color: string }>();
+  const courseColorById = useMemo(() => {
+    const map = new Map<string, string>();
+    courses.forEach((c) => {
+      if (c.color) map.set(c.id, c.color);
+    });
     entries.forEach((e) => {
-      if (e.course_id && e.course_name && e.course_color) {
-        map.set(e.course_id, { name: e.course_name, color: e.course_color });
+      if (e.course_id && e.course_color && !map.has(e.course_id)) {
+        map.set(e.course_id, e.course_color);
       }
     });
-    return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
-  }, [entries]);
+    return map;
+  }, [courses, entries]);
+
+  const courseColorMap = useMemo(() => {
+    const list: { name: string; color: string }[] = [];
+    const seen = new Set<string>();
+    courses.forEach((c) => {
+      const color = c.color ?? courseColorById.get(c.id);
+      if (!color || seen.has(c.id)) return;
+      seen.add(c.id);
+      list.push({ name: c.name, color });
+    });
+    entries.forEach((e) => {
+      if (e.course_id && e.course_name && e.course_color && !seen.has(e.course_id)) {
+        seen.add(e.course_id);
+        list.push({ name: e.course_name, color: e.course_color });
+      }
+    });
+    return list.sort((a, b) => a.name.localeCompare(b.name));
+  }, [courses, entries, courseColorById]);
 
   const byDay = useMemo(() => {
     const map = new Map<string, SharedEntry[]>();
@@ -200,6 +222,10 @@ const Shared = () => {
   const colorForEntry = (e: SharedEntry): string => {
     if (e.kind === "lavoro" || e.kind === "ferie") return ORANGE;
     if (e.course_color) return e.course_color;
+    if (e.course_id) {
+      const c = courseColorById.get(e.course_id);
+      if (c) return c;
+    }
     return "hsl(var(--foreground))";
   };
 

@@ -182,6 +182,7 @@ export type Database = {
         Args: { _token: string }
         Returns: {
           caricato: number
+          color: string
           fatto: number
           id: string
           name: string
