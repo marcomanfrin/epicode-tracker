@@ -12,6 +12,7 @@ import {
 } from "recharts";
 import { ChevronLeft, ChevronRight, Check, BookOpen, Briefcase, Sun, Brain, FolderKanban, ClipboardCheck, StickyNote, type LucideIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { courseColor } from "./Index";
 
 type Course = {
   id: string;
