@@ -1,41 +1,31 @@
-
-
 ## Obiettivo
-Permettere che i campi numerici dei corsi (totale, caricato, fatto) accettino valori decimali inseriti manualmente, mantenendo i pulsanti `+` e `-` con incremento/decremento di 1.
 
-## Modifiche
+Permettere di modificare un evento esistente nel calendario e di spostarlo in un altro giorno trascinandolo.
 
-### Database
-Nessuna modifica necessaria: i campi `totale`, `caricato`, `fatto` sono già `integer`. Verranno convertiti a `numeric` per supportare i decimali.
+## Modifiche a `src/pages/Calendar.tsx`
 
-### Migrazione SQL
-```sql
-ALTER TABLE public.courses
-  ALTER COLUMN totale TYPE numeric USING totale::numeric,
-  ALTER COLUMN fatto TYPE numeric USING fatto::numeric,
-  ALTER COLUMN caricato TYPE numeric USING caricato::numeric;
+### 1. Editing eventi
+- Aggiungere icona "matita" accanto al cestino in `renderEntryCard` (visibile sia in day view che nel dialog del giorno).
+- Cliccandola si entra in modalità edit inline per quell'evento: sostituisco l'header dell'event card con campi modificabili (tipo evento, materia se richiesta, etichetta, nota) — riuso gli stessi `Select`/`Input` di `renderAddForm`.
+- Pulsanti "Salva" / "Annulla". Al salvataggio chiamo `supabase.from("calendar_entries").update({...}).eq("id", e.id)` e aggiorno lo stato `entries` localmente.
+- Validazione: se il nuovo `kind` richiede materia, deve essere selezionata.
 
-ALTER TABLE public.courses
-  ALTER COLUMN totale SET DEFAULT 0,
-  ALTER COLUMN fatto SET DEFAULT 0,
-  ALTER COLUMN caricato SET DEFAULT 0;
-```
+### 2. Drag & Drop tra giorni
+- Aggiungere `draggable` alle pill renderizzate da `renderCellEntry` (month view) e ai bottoni eventi nella week view; `onDragStart` salva l'`entry.id` in `dataTransfer` + in uno stato `draggingId`.
+- Rendere i contenitori-giorno (celle del mese e colonne della settimana) drop target: `onDragOver` (preventDefault + stile hover) e `onDrop` che:
+  1. Legge l'id trascinato.
+  2. Se la data target è diversa da quella corrente, fa `update({ date: newDate }).eq("id", id)`.
+  3. Aggiorna lo stato `entries` localmente.
+  4. Mostra toast di conferma/errore.
+- Impedire che il drag start su una pill faccia partire il click che apre il dialog (gestire con flag `isDragging` o `e.stopPropagation` nell'onClick dopo drop).
+- Day view: nessun drop target inter-giorno necessario (mostra un solo giorno).
 
-### Frontend (`src/pages/Index.tsx`)
+### 3. Note tecniche
+- Usare HTML5 DnD nativo (no librerie aggiuntive).
+- Su mobile il DnD HTML5 non è supportato in modo affidabile: l'editing via matita garantisce comunque di poter cambiare giorno modificando il record. Eventuale supporto touch-DnD viene rimandato.
+- Nessuna modifica DB necessaria (schema già adeguato).
 
-1. **Form "Nuovo corso"** (riga 134): sostituire `parseInt(newTot, 10)` con `parseFloat(newTot)`. Sull'input `<input type="number">` (riga 448) aggiungere `step="any"` e abbassare `min` a un valore compatibile (es. `min={0.01}`).
-
-2. **Input numerici dello Stepper** nelle righe/card dei corsi: aggiungere `step="any"` all'attributo, e usare `parseFloat` invece di `parseInt` quando si legge `e.target.value`. In questo modo l'utente può digitare a mano valori come `2.5`.
-
-3. **Pulsanti `+` / `−`**: NESSUNA modifica. Continuano a chiamare `update(id, key, +1)` / `update(id, key, -1)`, quindi l'incremento resta intero (1).
-
-4. **Funzione `clamp`**: rimuovere eventuali arrotondamenti impliciti — già usa `Math.max`/`Math.min` che preservano i decimali, quindi nessuna modifica necessaria.
-
-5. **Visualizzazione totali e grafico**: i valori vengono già mostrati così come sono. Per evitare numeri con tante cifre decimali nei totali sommati (es. `0.1 + 0.2 = 0.30000000000004`), arrotondare a 2 decimali nei `useMemo` dei totals con `Math.round(x * 100) / 100`.
-
-6. **Asse Y del grafico**: rimuovere `allowDecimals={false}` (riga 382) per permettere tick decimali quando i valori lo richiedono.
-
-## File modificati
-- `src/pages/Index.tsx`
-- nuova migrazione SQL per convertire le colonne in `numeric`
-
+## Verifica
+- Drag di un evento da un giorno A a un giorno B in vista mese → l'evento sparisce da A, appare in B, persiste dopo refresh.
+- Stesso test in vista settimana.
+- Click matita → modifica tipo/materia/etichetta/nota → salva → cambiamenti visibili e persistenti.
