@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
-import { ChevronLeft, ChevronRight, ArrowLeft, Plus, Trash2, Check, Pencil, BookOpen, Briefcase, Sun, Brain, FolderKanban, ClipboardCheck, StickyNote, type LucideIcon } from "lucide-react";
-import { ThemeToggle } from "@/components/ThemeToggle";
+import { ChevronLeft, ChevronRight, LogOut, Plus, Trash2, Check, Pencil, BookOpen, Briefcase, Sun, Brain, FolderKanban, ClipboardCheck, StickyNote, type LucideIcon } from "lucide-react";
+import { AppNavbar } from "@/components/AppNavbar";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -67,7 +66,7 @@ const fmt = (d: Date) => {
 };
 
 const Calendar = () => {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const today = new Date();
   const todayFmt = fmt(today);
 
@@ -687,13 +686,19 @@ const Calendar = () => {
 
   return (
     <main className="min-h-screen bg-background text-foreground">
-      <header className="container-editorial pt-10 md:pt-16 pb-6 md:pb-10">
-        <div className="flex items-center justify-between mb-8 gap-4">
-          <Link to="/" className="label-meta inline-flex items-center gap-1.5 hover:text-primary transition-colors">
-            <ArrowLeft className="h-3.5 w-3.5" /> Indietro
-          </Link>
-          <ThemeToggle />
-        </div>
+      <AppNavbar
+        actions={
+          <button
+            onClick={signOut}
+            className="label-meta inline-flex items-center gap-1.5 hover:text-primary transition-colors"
+            aria-label="Esci"
+          >
+            <LogOut className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Esci</span>
+          </button>
+        }
+      />
+      <header className="container-editorial pt-6 pb-6 md:pt-10 md:pb-10">
         <h1 className="font-serif text-4xl md:text-6xl leading-[0.95] tracking-tight">
           Il tuo <span className="italic text-primary">calendario</span>.
         </h1>
@@ -704,18 +709,22 @@ const Calendar = () => {
 
       <section className="container-editorial pb-20">
         {/* View switcher */}
-        <div className="flex items-center justify-end gap-1 mb-4">
-          {(["month", "week", "day"] as CalView[]).map((v) => (
-            <button
-              key={v}
-              onClick={() => setView(v)}
-              className={`label-meta px-3 py-1.5 rounded transition-colors ${
-                view === v ? "bg-primary text-primary-foreground" : "hover:bg-secondary"
-              }`}
-            >
-              {v === "month" ? "Mese" : v === "week" ? "Sett." : "Giorno"}
-            </button>
-          ))}
+        <div className="flex items-center justify-end mb-4">
+          <div className="flex items-center gap-0.5 bg-secondary/60 rounded p-0.5">
+            {(["month", "week", "day"] as CalView[]).map((v) => (
+              <button
+                key={v}
+                onClick={() => setView(v)}
+                className={`label-meta px-3 py-1 rounded transition-colors ${
+                  view === v
+                    ? "bg-background text-foreground shadow-sm"
+                    : "hover:bg-background/50 text-muted-foreground"
+                }`}
+              >
+                {v === "month" ? "Mese" : v === "week" ? "Sett." : "Giorno"}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Navigation */}
@@ -737,7 +746,7 @@ const Calendar = () => {
             </h2>
             <button
               onClick={() => setCursor(today)}
-              className="label-meta text-xs text-muted-foreground hover:text-primary transition-colors"
+              className="label-meta text-xs px-2.5 py-0.5 rounded border border-border-soft hover:bg-secondary hover:text-primary transition-colors"
             >
               Oggi
             </button>

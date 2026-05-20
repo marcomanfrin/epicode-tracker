@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { LogOut, Plus, Trash2, Minus, GripVertical, Share2, Copy, Check, CalendarDays } from "lucide-react";
-import { Link } from "react-router-dom";
+import { LogOut, Plus, Trash2, Minus, GripVertical, Share2, Copy, Check } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { ThemeToggle } from "@/components/ThemeToggle";
+import { AppNavbar } from "@/components/AppNavbar";
 import {
   Bar,
   BarChart,
@@ -271,38 +270,33 @@ const Index = () => {
 
   return (
     <main className="min-h-screen bg-background text-foreground">
-      {/* HERO */}
-      <header className="container-editorial pt-16 pb-12 md:pt-24 md:pb-20">
-        <div className="flex flex-wrap items-center justify-between mb-10 gap-4">
-          <span className="label-meta">Course Tracker</span>
-          <div className="flex flex-wrap items-center gap-2 sm:gap-4">
+      <AppNavbar
+        actions={
+          <>
             <span className="label-meta hidden sm:inline">
               {courses.length.toString().padStart(2, "0")} corsi
             </span>
-            <ThemeToggle />
-            <Link
-              to="/calendar"
-              className="label-meta inline-flex items-center gap-1.5 hover:text-primary transition-colors"
-              aria-label="Calendario"
-            >
-              <CalendarDays className="h-3.5 w-3.5" /> Calendario
-            </Link>
             <button
               onClick={openShare}
               className="label-meta inline-flex items-center gap-1.5 hover:text-primary transition-colors"
               aria-label="Condividi"
             >
-              <Share2 className="h-3.5 w-3.5" /> Condividi
+              <Share2 className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Condividi</span>
             </button>
             <button
               onClick={signOut}
               className="label-meta inline-flex items-center gap-1.5 hover:text-primary transition-colors"
               aria-label="Esci"
             >
-              <LogOut className="h-3.5 w-3.5" /> Esci
+              <LogOut className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Esci</span>
             </button>
-          </div>
-        </div>
+          </>
+        }
+      />
+      {/* HERO */}
+      <header className="container-editorial pt-10 pb-12 md:pt-16 md:pb-20">
         <h1 className="font-serif text-5xl md:text-7xl leading-[0.95] tracking-tight">
           Moduli <span className="italic text-primary">seguiti</span>,
           <br />
