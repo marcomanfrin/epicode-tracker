@@ -743,14 +743,24 @@ const Calendar = () => {
                   <button
                     key={key}
                     onClick={() => { setOpenDay(key); resetForm(); }}
+                    onDragOver={(ev) => { if (draggingId) { ev.preventDefault(); ev.dataTransfer.dropEffect = "move"; setDragOverDay(key); } }}
+                    onDragLeave={() => { if (dragOverDay === key) setDragOverDay(null); }}
+                    onDrop={(ev) => {
+                      ev.preventDefault();
+                      const id = ev.dataTransfer.getData("text/plain") || draggingId;
+                      setDragOverDay(null);
+                      setDraggingId(null);
+                      if (id) moveEntryToDate(id, key);
+                    }}
                     className={`relative min-h-[72px] sm:min-h-[110px] p-1.5 text-left hover:bg-secondary/40 transition-colors overflow-hidden ${
                       inMonth ? "" : "opacity-40"
-                    } ${examColor ? "" : "bg-background"}`}
+                    } ${examColor ? "" : "bg-background"} ${dragOverDay === key ? "ring-2 ring-primary ring-inset" : ""}`}
                     style={examColor ? {
                       backgroundColor: `color-mix(in srgb, ${examColor} 10%, var(--background, white))`,
                       borderLeft: `3px solid ${examColor}`,
                     } : undefined}
                   >
+
                     <div className="flex items-center justify-between mb-1">
                       <span
                         className={`font-mono text-xs tabular-nums ${
