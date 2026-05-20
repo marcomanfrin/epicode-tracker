@@ -332,6 +332,7 @@ const Calendar = () => {
     setNewCourse("");
     setNewLabel("");
     setNewNote("");
+    setShowAddForm(false);
   };
 
   const addEntry = async () => {
