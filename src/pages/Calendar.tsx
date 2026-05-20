@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, LogOut, Plus, Trash2, Check, Pencil, BookOpen, Briefcase, Sun, Brain, FolderKanban, ClipboardCheck, StickyNote, type LucideIcon } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Trash2, Check, Pencil, BookOpen, Briefcase, Sun, Brain, FolderKanban, ClipboardCheck, StickyNote, Copy, type LucideIcon } from "lucide-react";
 import { AppNavbar } from "@/components/AppNavbar";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useShare } from "@/hooks/useShare";
 import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -66,7 +68,8 @@ const fmt = (d: Date) => {
 };
 
 const Calendar = () => {
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
+  const { shareOpen, setShareOpen, shareUrl, shareLoading, copied, openShare, copyShare, regenerateShare, revokeShare } = useShare();
   const today = new Date();
   const todayFmt = fmt(today);
 
@@ -686,23 +689,12 @@ const Calendar = () => {
 
   return (
     <main className="min-h-screen bg-background text-foreground">
-      <AppNavbar
-        actions={
-          <button
-            onClick={signOut}
-            className="label-meta inline-flex items-center gap-1.5 hover:text-primary transition-colors"
-            aria-label="Esci"
-          >
-            <LogOut className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Esci</span>
-          </button>
-        }
-      />
-      <header className="container-editorial pt-6 pb-6 md:pt-10 md:pb-10">
-        <h1 className="font-serif text-4xl md:text-6xl leading-[0.95] tracking-tight">
+      <AppNavbar onShare={openShare} />
+      <header className="container-editorial pt-10 pb-12 md:pt-16 md:pb-20">
+        <h1 className="font-serif text-5xl md:text-7xl leading-[0.95] tracking-tight">
           Il tuo <span className="italic text-primary">calendario</span>.
         </h1>
-        <p className="mt-4 max-w-xl text-sm md:text-base text-muted-foreground font-sans">
+        <p className="mt-6 max-w-xl text-base md:text-lg text-muted-foreground font-sans">
           Tocca un giorno per aggiungere annotazioni e todo.
         </p>
       </header>
@@ -1010,6 +1002,57 @@ const Calendar = () => {
               >
                 <Plus className="h-4 w-4 mr-1.5" /> Aggiungi annotazione
               </Button>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={shareOpen} onOpenChange={setShareOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Condividi il tuo stato</DialogTitle>
+            <DialogDescription>
+              Chiunque abbia questo link potrà visualizzare i tuoi corsi in sola lettura, senza accedere.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {shareLoading && (
+              <div className="label-meta">Caricamento…</div>
+            )}
+            {!shareLoading && shareUrl && (
+              <>
+                <div className="flex gap-2">
+                  <input
+                    readOnly
+                    value={shareUrl}
+                    onFocus={(e) => e.currentTarget.select()}
+                    className="flex-1 bg-secondary border border-input rounded-md px-3 py-2 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                  />
+                  <button
+                    onClick={copyShare}
+                    className="inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground px-4 py-2 font-mono text-sm uppercase tracking-wider hover:opacity-90 transition-opacity rounded-md"
+                  >
+                    {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                    {copied ? "Copiato" : "Copia"}
+                  </button>
+                </div>
+                <div className="flex gap-3 label-meta">
+                  <button
+                    onClick={regenerateShare}
+                    className="hover:text-primary transition-colors underline"
+                  >
+                    Rigenera link
+                  </button>
+                  <button
+                    onClick={revokeShare}
+                    className="hover:text-destructive transition-colors underline"
+                  >
+                    Revoca
+                  </button>
+                </div>
+              </>
+            )}
+            {!shareLoading && !shareUrl && (
+              <div className="text-sm text-muted-foreground">Nessun link attivo.</div>
             )}
           </div>
         </DialogContent>

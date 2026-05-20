@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { LogOut, Plus, Trash2, Minus, GripVertical, Share2, Copy, Check } from "lucide-react";
+import { Plus, Trash2, Minus, GripVertical, Copy, Check } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useShare } from "@/hooks/useShare";
 import { AppNavbar } from "@/components/AppNavbar";
 import {
   Bar,
@@ -59,75 +60,12 @@ export const courseColor = (c: { color: string | null; position?: number }, idx 
 type EditableKey = "fatto" | "caricato";
 
 const Index = () => {
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
+  const { shareOpen, setShareOpen, shareUrl, shareLoading, copied, openShare, copyShare, regenerateShare, revokeShare } = useShare();
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [newName, setNewName] = useState("");
   const [newTot, setNewTot] = useState<string>("");
-
-  // Share state
-  const [shareOpen, setShareOpen] = useState(false);
-  const [shareUrl, setShareUrl] = useState<string | null>(null);
-  const [shareLoading, setShareLoading] = useState(false);
-  const [copied, setCopied] = useState(false);
-
-  const buildShareUrl = (token: string) =>
-    `${window.location.origin}/share/${token}`;
-
-  const openShare = async () => {
-    setShareOpen(true);
-    if (!user || shareUrl) return;
-    setShareLoading(true);
-    // Reuse existing token if any
-    const { data: existing } = await supabase
-      .from("share_tokens")
-      .select("token")
-      .eq("user_id", user.id)
-      .limit(1)
-      .maybeSingle();
-    if (existing?.token) {
-      setShareUrl(buildShareUrl(existing.token));
-      setShareLoading(false);
-      return;
-    }
-    const token = crypto.randomUUID().replace(/-/g, "");
-    const { error } = await supabase
-      .from("share_tokens")
-      .insert({ user_id: user.id, token });
-    if (error) toast.error("Errore: " + error.message);
-    else setShareUrl(buildShareUrl(token));
-    setShareLoading(false);
-  };
-
-  const regenerateShare = async () => {
-    if (!user) return;
-    setShareLoading(true);
-    setCopied(false);
-    await supabase.from("share_tokens").delete().eq("user_id", user.id);
-    const token = crypto.randomUUID().replace(/-/g, "");
-    const { error } = await supabase
-      .from("share_tokens")
-      .insert({ user_id: user.id, token });
-    if (error) toast.error("Errore: " + error.message);
-    else setShareUrl(buildShareUrl(token));
-    setShareLoading(false);
-  };
-
-  const revokeShare = async () => {
-    if (!user) return;
-    setShareLoading(true);
-    await supabase.from("share_tokens").delete().eq("user_id", user.id);
-    setShareUrl(null);
-    setShareLoading(false);
-    toast.success("Link revocato");
-  };
-
-  const copyShare = async () => {
-    if (!shareUrl) return;
-    await navigator.clipboard.writeText(shareUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
-  };
 
   // Initial load + realtime sync
   useEffect(() => {
@@ -271,28 +209,11 @@ const Index = () => {
   return (
     <main className="min-h-screen bg-background text-foreground">
       <AppNavbar
+        onShare={openShare}
         actions={
-          <>
-            <span className="label-meta hidden sm:inline">
-              {courses.length.toString().padStart(2, "0")} corsi
-            </span>
-            <button
-              onClick={openShare}
-              className="label-meta inline-flex items-center gap-1.5 hover:text-primary transition-colors"
-              aria-label="Condividi"
-            >
-              <Share2 className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Condividi</span>
-            </button>
-            <button
-              onClick={signOut}
-              className="label-meta inline-flex items-center gap-1.5 hover:text-primary transition-colors"
-              aria-label="Esci"
-            >
-              <LogOut className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Esci</span>
-            </button>
-          </>
+          <span className="label-meta hidden sm:inline">
+            {courses.length.toString().padStart(2, "0")} corsi
+          </span>
         }
       />
       {/* HERO */}
