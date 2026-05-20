@@ -802,7 +802,16 @@ const Calendar = () => {
                 return (
                   <div
                     key={key}
-                    className={`flex-none w-[48vw] sm:w-auto rounded-lg overflow-hidden flex flex-col ${examColor ? "" : "bg-secondary/20"}`}
+                    onDragOver={(ev) => { if (draggingId) { ev.preventDefault(); ev.dataTransfer.dropEffect = "move"; setDragOverDay(key); } }}
+                    onDragLeave={() => { if (dragOverDay === key) setDragOverDay(null); }}
+                    onDrop={(ev) => {
+                      ev.preventDefault();
+                      const id = ev.dataTransfer.getData("text/plain") || draggingId;
+                      setDragOverDay(null);
+                      setDraggingId(null);
+                      if (id) moveEntryToDate(id, key);
+                    }}
+                    className={`flex-none w-[48vw] sm:w-auto rounded-lg overflow-hidden flex flex-col ${examColor ? "" : "bg-secondary/20"} ${dragOverDay === key ? "ring-2 ring-primary" : ""}`}
                     style={examColor ? {
                       backgroundColor: `color-mix(in srgb, ${examColor} 8%, transparent)`,
                       borderLeft: `3px solid ${examColor}`,
@@ -836,10 +845,18 @@ const Calendar = () => {
                           <button
                             key={e.id}
                             onClick={() => { setOpenDay(key); resetForm(); }}
+                            draggable
+                            onDragStart={(ev) => {
+                              ev.stopPropagation();
+                              ev.dataTransfer.setData("text/plain", e.id);
+                              ev.dataTransfer.effectAllowed = "move";
+                              setDraggingId(e.id);
+                            }}
+                            onDragEnd={() => { setDraggingId(null); setDragOverDay(null); }}
                             title={[meta.full, courseName, e.label].filter(Boolean).join(" · ")}
-                            className={`w-full text-left px-1.5 py-1 rounded flex items-center gap-1 ${
+                            className={`w-full text-left px-1.5 py-1 rounded flex items-center gap-1 cursor-grab active:cursor-grabbing ${
                               isExam ? "border-2 font-bold" : "border"
-                            }`}
+                            } ${draggingId === e.id ? "opacity-50" : ""}`}
                             style={{
                               backgroundColor: `color-mix(in srgb, ${color} ${isExam ? 20 : 12}%, transparent)`,
                               borderColor: isExam ? color : `color-mix(in srgb, ${color} 30%, transparent)`,
@@ -853,6 +870,7 @@ const Calendar = () => {
                       })}
                     </div>
                   </div>
+
                 );
               })}
             </div>
