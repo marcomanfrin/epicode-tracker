@@ -86,6 +86,61 @@ const Calendar = () => {
   const [newNote, setNewNote] = useState("");
   const [newTodoText, setNewTodoText] = useState<Record<string, string>>({});
 
+  // Editing state
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editKind, setEditKind] = useState<Kind>("studio");
+  const [editCourse, setEditCourse] = useState<string>("");
+  const [editLabel, setEditLabel] = useState("");
+  const [editNote, setEditNote] = useState("");
+
+  // Drag & drop state
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [dragOverDay, setDragOverDay] = useState<string | null>(null);
+
+  const startEdit = (e: Entry) => {
+    setEditingId(e.id);
+    setEditKind(e.kind);
+    setEditCourse(e.course_id ?? "");
+    setEditLabel(e.label ?? "");
+    setEditNote(e.note ?? "");
+  };
+
+  const cancelEdit = () => setEditingId(null);
+
+  const saveEdit = async (id: string) => {
+    const meta = KIND_META[editKind];
+    if (meta.requiresCourse && !editCourse) {
+      toast.error("Seleziona una materia");
+      return;
+    }
+    const payload = {
+      kind: editKind,
+      course_id: meta.requiresCourse ? editCourse : null,
+      label: editLabel.trim() || null,
+      note: editNote.trim() || null,
+    };
+    const { error } = await supabase.from("calendar_entries").update(payload).eq("id", id);
+    if (error) {
+      toast.error("Errore aggiornamento");
+      return;
+    }
+    setEntries((prev) => prev.map((e) => (e.id === id ? { ...e, ...payload } as Entry : e)));
+    setEditingId(null);
+  };
+
+  const moveEntryToDate = async (id: string, newDate: string) => {
+    const entry = entries.find((e) => e.id === id);
+    if (!entry || entry.date === newDate) return;
+    const { error } = await supabase.from("calendar_entries").update({ date: newDate }).eq("id", id);
+    if (error) {
+      toast.error("Errore spostamento");
+      return;
+    }
+    setEntries((prev) => prev.map((e) => (e.id === id ? { ...e, date: newDate } : e)));
+    toast.success("Evento spostato");
+  };
+
+
   useEffect(() => {
     if (!user) return;
     (async () => {
