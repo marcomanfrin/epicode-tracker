@@ -582,44 +582,73 @@ const Calendar = () => {
   };
 
   const renderAddForm = () => (
-    <div className="border-t border-border-soft pt-4 space-y-3">
-      <div className="label-meta">Aggiungi annotazione</div>
-      <Select value={newKind} onValueChange={(v) => { setNewKind(v as Kind); setNewCourse(""); }}>
-        <SelectTrigger><SelectValue /></SelectTrigger>
-        <SelectContent>
-          {(Object.keys(KIND_META) as Kind[]).map((k) => (
-            <SelectItem key={k} value={k}>{KIND_META[k].full}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      {KIND_META[newKind].requiresCourse && (
-        <Select value={newCourse} onValueChange={setNewCourse}>
-          <SelectTrigger>
-            <SelectValue placeholder={courses.length ? "Seleziona materia" : "Nessuna materia: aggiungine una"} />
-          </SelectTrigger>
+    <div className="rounded-lg border border-border-soft bg-secondary/30 p-3 space-y-2.5">
+      <div className="flex items-center justify-between">
+        <div className="label-meta">Nuova annotazione</div>
+        <button
+          onClick={() => { setShowAddForm(false); }}
+          className="label-meta text-muted-foreground hover:text-foreground transition-colors"
+        >
+          Annulla
+        </button>
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <Select value={newKind} onValueChange={(v) => { setNewKind(v as Kind); setNewCourse(""); }}>
+          <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
           <SelectContent>
-            {courses.map((c) => (
-              <SelectItem key={c.id} value={c.id}>
-                <span className="inline-flex items-center gap-2">
-                  <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: courseColor(c) }} />
-                  {c.name}
-                </span>
-              </SelectItem>
-            ))}
+            {(Object.keys(KIND_META) as Kind[]).map((k) => {
+              const Icon = KIND_META[k].icon;
+              return (
+                <SelectItem key={k} value={k}>
+                  <span className="inline-flex items-center gap-2">
+                    <Icon className="h-3.5 w-3.5" />
+                    {KIND_META[k].full}
+                  </span>
+                </SelectItem>
+              );
+            })}
           </SelectContent>
         </Select>
+        {KIND_META[newKind].requiresCourse ? (
+          <Select value={newCourse} onValueChange={setNewCourse}>
+            <SelectTrigger className="h-9">
+              <SelectValue placeholder={courses.length ? "Materia" : "Nessuna materia"} />
+            </SelectTrigger>
+            <SelectContent>
+              {courses.map((c) => (
+                <SelectItem key={c.id} value={c.id}>
+                  <span className="inline-flex items-center gap-2">
+                    <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: courseColor(c) }} />
+                    {c.name}
+                  </span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ) : (
+          <Input
+            placeholder="Etichetta breve"
+            value={newLabel}
+            onChange={(e) => setNewLabel(e.target.value)}
+            className="h-9"
+          />
+        )}
+      </div>
+      {KIND_META[newKind].requiresCourse && (
+        <Input
+          placeholder="Etichetta breve (opzionale)"
+          value={newLabel}
+          onChange={(e) => setNewLabel(e.target.value)}
+          className="h-9"
+        />
       )}
-      <Input
-        placeholder="Etichetta breve (opzionale)"
-        value={newLabel}
-        onChange={(e) => setNewLabel(e.target.value)}
-      />
       <Input
         placeholder="Nota (opzionale)"
         value={newNote}
         onChange={(e) => setNewNote(e.target.value)}
+        className="h-9"
       />
-      <Button onClick={addEntry} className="w-full">
+      <Button onClick={addEntry} className="w-full h-9">
         <Plus className="h-4 w-4 mr-1" /> Aggiungi
       </Button>
     </div>
