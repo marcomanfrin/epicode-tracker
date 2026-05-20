@@ -941,24 +941,68 @@ const Calendar = () => {
       </section>
 
       {/* Dialog — used by month, week, and day view (for adding) */}
-      <Dialog open={!!openDay} onOpenChange={(o) => !o && setOpenDay(null)}>
-        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="font-serif text-2xl">
-              {openDay && new Date(openDay + "T00:00:00").toLocaleDateString("it-IT", {
-                weekday: "long", day: "numeric", month: "long", year: "numeric",
-              })}
-            </DialogTitle>
-          </DialogHeader>
+      <Dialog open={!!openDay} onOpenChange={(o) => { if (!o) { setOpenDay(null); setShowAddForm(false); setEditingId(null); } }}>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto p-0 gap-0">
+          {openDay && (() => {
+            const d = new Date(openDay + "T00:00:00");
+            const weekday = d.toLocaleDateString("it-IT", { weekday: "long" });
+            const dayNum = d.getDate();
+            const monthName = d.toLocaleDateString("it-IT", { month: "long" });
+            const year = d.getFullYear();
+            const isToday = openDay === todayFmt;
+            return (
+              <DialogHeader className="px-5 pt-5 pb-4 border-b border-border-soft space-y-1">
+                <div className="flex items-baseline gap-3">
+                  <span className="font-serif text-4xl tabular-nums leading-none">{dayNum}</span>
+                  <div className="flex flex-col">
+                    <DialogTitle className="font-serif text-lg capitalize leading-tight">
+                      {weekday}
+                    </DialogTitle>
+                    <span className="label-meta text-muted-foreground capitalize">
+                      {monthName} {year}{isToday && " · Oggi"}
+                    </span>
+                  </div>
+                </div>
+                <div className="label-meta text-muted-foreground pt-1">
+                  {dayEntries.length === 0
+                    ? "Nessuna annotazione"
+                    : `${dayEntries.length} ${dayEntries.length === 1 ? "annotazione" : "annotazioni"}`}
+                </div>
+              </DialogHeader>
+            );
+          })()}
 
-          <div className="space-y-3">
-            {dayEntries.length === 0 && (
-              <p className="text-sm text-muted-foreground">Nessuna annotazione.</p>
+          <div className="px-5 py-4 space-y-3">
+            {dayEntries.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-8 text-center">
+                <div className="h-12 w-12 rounded-full bg-secondary/60 flex items-center justify-center mb-3">
+                  <StickyNote className="h-5 w-5 text-muted-foreground" />
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Niente da fare in questo giorno.
+                </p>
+                <p className="label-meta text-muted-foreground mt-1">
+                  Aggiungi la tua prima annotazione.
+                </p>
+              </div>
+            ) : (
+              dayEntries.map((e) => renderEntryCard(e))
             )}
-            {dayEntries.map((e) => renderEntryCard(e))}
           </div>
 
-          {renderAddForm()}
+          <div className="px-5 pb-5 pt-1">
+            {showAddForm ? (
+              renderAddForm()
+            ) : (
+              <Button
+                variant="outline"
+                onClick={() => setShowAddForm(true)}
+                className="w-full h-10 border-dashed"
+              >
+                <Plus className="h-4 w-4 mr-1.5" /> Aggiungi annotazione
+              </Button>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </main>
