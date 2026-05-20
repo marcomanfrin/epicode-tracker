@@ -421,11 +421,19 @@ const Calendar = () => {
       <span
         key={e.id}
         title={[meta.full, courseName, e.label].filter(Boolean).join(" · ")}
-        className={`leading-tight px-1.5 py-0.5 rounded w-full flex items-center gap-1 ${
+        draggable
+        onDragStart={(ev) => {
+          ev.stopPropagation();
+          ev.dataTransfer.setData("text/plain", e.id);
+          ev.dataTransfer.effectAllowed = "move";
+          setDraggingId(e.id);
+        }}
+        onDragEnd={() => { setDraggingId(null); setDragOverDay(null); }}
+        className={`leading-tight px-1.5 py-0.5 rounded w-full flex items-center gap-1 cursor-grab active:cursor-grabbing ${
           isExam
             ? "border-2 font-bold text-[10px] sm:text-[11px]"
             : "border font-mono text-[9px] sm:text-[10px] truncate"
-        }`}
+        } ${draggingId === e.id ? "opacity-50" : ""}`}
         style={{
           backgroundColor: isExam
             ? `color-mix(in srgb, ${color} 22%, transparent)`
@@ -442,6 +450,7 @@ const Calendar = () => {
       </span>
     );
   };
+
 
   // Full entry card for day view and dialog
   const renderEntryCard = (e: Entry) => {
