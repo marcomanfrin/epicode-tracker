@@ -466,6 +466,41 @@ const Calendar = () => {
         className={`rounded p-2.5 ${isExam ? "border-2" : "border border-border-soft"}`}
         style={isExam ? { borderColor: color, backgroundColor: `color-mix(in srgb, ${color} 8%, transparent)` } : undefined}
       >
+        {editingId === e.id ? (
+          <div className="space-y-2">
+            <Select value={editKind} onValueChange={(v) => { setEditKind(v as Kind); if (!KIND_META[v as Kind].requiresCourse) setEditCourse(""); }}>
+              <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {(Object.keys(KIND_META) as Kind[]).map((k) => (
+                  <SelectItem key={k} value={k}>{KIND_META[k].full}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {KIND_META[editKind].requiresCourse && (
+              <Select value={editCourse} onValueChange={setEditCourse}>
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder="Seleziona materia" />
+                </SelectTrigger>
+                <SelectContent>
+                  {courses.map((co) => (
+                    <SelectItem key={co.id} value={co.id}>
+                      <span className="inline-flex items-center gap-2">
+                        <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: courseColor(co) }} />
+                        {co.name}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            <Input placeholder="Etichetta" value={editLabel} onChange={(ev) => setEditLabel(ev.target.value)} className="h-9" />
+            <Input placeholder="Nota" value={editNote} onChange={(ev) => setEditNote(ev.target.value)} className="h-9" />
+            <div className="flex gap-2">
+              <Button size="sm" onClick={() => saveEdit(e.id)} className="flex-1">Salva</Button>
+              <Button size="sm" variant="outline" onClick={cancelEdit}>Annulla</Button>
+            </div>
+          </div>
+        ) : (
         <div className="flex items-start gap-2">
           <span
             className={`inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0 mt-0.5 ${isExam ? "border-2" : "border"}`}
@@ -487,6 +522,13 @@ const Calendar = () => {
             {e.note && <div className="text-muted-foreground text-xs mt-0.5 break-words">{e.note}</div>}
           </div>
           <button
+            onClick={() => startEdit(e)}
+            className="text-muted-foreground hover:text-primary p-1"
+            aria-label="Modifica"
+          >
+            <Pencil className="h-3.5 w-3.5" />
+          </button>
+          <button
             onClick={() => deleteEntry(e.id)}
             className="text-muted-foreground hover:text-destructive p-1"
             aria-label="Elimina"
@@ -494,6 +536,8 @@ const Calendar = () => {
             <Trash2 className="h-3.5 w-3.5" />
           </button>
         </div>
+        )}
+
         <div className="mt-2 pl-6 space-y-1">
           {list.map((t) => (
             <div key={t.id} className="flex items-center gap-2 text-sm group">
