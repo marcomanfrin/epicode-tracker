@@ -79,6 +79,7 @@ const Calendar = () => {
   const [courses, setCourses] = useState<Course[]>([]);
   const [openDay, setOpenDay] = useState<string | null>(null);
   const [todos, setTodos] = useState<Record<string, Todo[]>>({});
+  const [showAddForm, setShowAddForm] = useState(false);
 
   const [newKind, setNewKind] = useState<Kind>("studio");
   const [newCourse, setNewCourse] = useState<string>("");
