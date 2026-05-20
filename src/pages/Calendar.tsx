@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { ChevronLeft, ChevronRight, ArrowLeft, Plus, Trash2, Check, BookOpen, Briefcase, Sun, Brain, FolderKanban, ClipboardCheck, StickyNote, type LucideIcon } from "lucide-react";
+import { ChevronLeft, ChevronRight, ArrowLeft, Plus, Trash2, Check, Pencil, BookOpen, Briefcase, Sun, Brain, FolderKanban, ClipboardCheck, StickyNote, type LucideIcon } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -85,6 +85,61 @@ const Calendar = () => {
   const [newLabel, setNewLabel] = useState("");
   const [newNote, setNewNote] = useState("");
   const [newTodoText, setNewTodoText] = useState<Record<string, string>>({});
+
+  // Editing state
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editKind, setEditKind] = useState<Kind>("studio");
+  const [editCourse, setEditCourse] = useState<string>("");
+  const [editLabel, setEditLabel] = useState("");
+  const [editNote, setEditNote] = useState("");
+
+  // Drag & drop state
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [dragOverDay, setDragOverDay] = useState<string | null>(null);
+
+  const startEdit = (e: Entry) => {
+    setEditingId(e.id);
+    setEditKind(e.kind);
+    setEditCourse(e.course_id ?? "");
+    setEditLabel(e.label ?? "");
+    setEditNote(e.note ?? "");
+  };
+
+  const cancelEdit = () => setEditingId(null);
+
+  const saveEdit = async (id: string) => {
+    const meta = KIND_META[editKind];
+    if (meta.requiresCourse && !editCourse) {
+      toast.error("Seleziona una materia");
+      return;
+    }
+    const payload = {
+      kind: editKind,
+      course_id: meta.requiresCourse ? editCourse : null,
+      label: editLabel.trim() || null,
+      note: editNote.trim() || null,
+    };
+    const { error } = await supabase.from("calendar_entries").update(payload).eq("id", id);
+    if (error) {
+      toast.error("Errore aggiornamento");
+      return;
+    }
+    setEntries((prev) => prev.map((e) => (e.id === id ? { ...e, ...payload } as Entry : e)));
+    setEditingId(null);
+  };
+
+  const moveEntryToDate = async (id: string, newDate: string) => {
+    const entry = entries.find((e) => e.id === id);
+    if (!entry || entry.date === newDate) return;
+    const { error } = await supabase.from("calendar_entries").update({ date: newDate }).eq("id", id);
+    if (error) {
+      toast.error("Errore spostamento");
+      return;
+    }
+    setEntries((prev) => prev.map((e) => (e.id === id ? { ...e, date: newDate } : e)));
+    toast.success("Evento spostato");
+  };
+
 
   useEffect(() => {
     if (!user) return;
@@ -366,11 +421,19 @@ const Calendar = () => {
       <span
         key={e.id}
         title={[meta.full, courseName, e.label].filter(Boolean).join(" · ")}
-        className={`leading-tight px-1.5 py-0.5 rounded w-full flex items-center gap-1 ${
+        draggable
+        onDragStart={(ev) => {
+          ev.stopPropagation();
+          ev.dataTransfer.setData("text/plain", e.id);
+          ev.dataTransfer.effectAllowed = "move";
+          setDraggingId(e.id);
+        }}
+        onDragEnd={() => { setDraggingId(null); setDragOverDay(null); }}
+        className={`leading-tight px-1.5 py-0.5 rounded w-full flex items-center gap-1 cursor-grab active:cursor-grabbing ${
           isExam
             ? "border-2 font-bold text-[10px] sm:text-[11px]"
             : "border font-mono text-[9px] sm:text-[10px] truncate"
-        }`}
+        } ${draggingId === e.id ? "opacity-50" : ""}`}
         style={{
           backgroundColor: isExam
             ? `color-mix(in srgb, ${color} 22%, transparent)`
@@ -388,6 +451,7 @@ const Calendar = () => {
     );
   };
 
+
   // Full entry card for day view and dialog
   const renderEntryCard = (e: Entry) => {
     const meta = KIND_META[e.kind];
@@ -402,6 +466,41 @@ const Calendar = () => {
         className={`rounded p-2.5 ${isExam ? "border-2" : "border border-border-soft"}`}
         style={isExam ? { borderColor: color, backgroundColor: `color-mix(in srgb, ${color} 8%, transparent)` } : undefined}
       >
+        {editingId === e.id ? (
+          <div className="space-y-2">
+            <Select value={editKind} onValueChange={(v) => { setEditKind(v as Kind); if (!KIND_META[v as Kind].requiresCourse) setEditCourse(""); }}>
+              <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {(Object.keys(KIND_META) as Kind[]).map((k) => (
+                  <SelectItem key={k} value={k}>{KIND_META[k].full}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {KIND_META[editKind].requiresCourse && (
+              <Select value={editCourse} onValueChange={setEditCourse}>
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder="Seleziona materia" />
+                </SelectTrigger>
+                <SelectContent>
+                  {courses.map((co) => (
+                    <SelectItem key={co.id} value={co.id}>
+                      <span className="inline-flex items-center gap-2">
+                        <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: courseColor(co) }} />
+                        {co.name}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            <Input placeholder="Etichetta" value={editLabel} onChange={(ev) => setEditLabel(ev.target.value)} className="h-9" />
+            <Input placeholder="Nota" value={editNote} onChange={(ev) => setEditNote(ev.target.value)} className="h-9" />
+            <div className="flex gap-2">
+              <Button size="sm" onClick={() => saveEdit(e.id)} className="flex-1">Salva</Button>
+              <Button size="sm" variant="outline" onClick={cancelEdit}>Annulla</Button>
+            </div>
+          </div>
+        ) : (
         <div className="flex items-start gap-2">
           <span
             className={`inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0 mt-0.5 ${isExam ? "border-2" : "border"}`}
@@ -423,6 +522,13 @@ const Calendar = () => {
             {e.note && <div className="text-muted-foreground text-xs mt-0.5 break-words">{e.note}</div>}
           </div>
           <button
+            onClick={() => startEdit(e)}
+            className="text-muted-foreground hover:text-primary p-1"
+            aria-label="Modifica"
+          >
+            <Pencil className="h-3.5 w-3.5" />
+          </button>
+          <button
             onClick={() => deleteEntry(e.id)}
             className="text-muted-foreground hover:text-destructive p-1"
             aria-label="Elimina"
@@ -430,6 +536,8 @@ const Calendar = () => {
             <Trash2 className="h-3.5 w-3.5" />
           </button>
         </div>
+        )}
+
         <div className="mt-2 pl-6 space-y-1">
           {list.map((t) => (
             <div key={t.id} className="flex items-center gap-2 text-sm group">
@@ -635,14 +743,24 @@ const Calendar = () => {
                   <button
                     key={key}
                     onClick={() => { setOpenDay(key); resetForm(); }}
+                    onDragOver={(ev) => { if (draggingId) { ev.preventDefault(); ev.dataTransfer.dropEffect = "move"; setDragOverDay(key); } }}
+                    onDragLeave={() => { if (dragOverDay === key) setDragOverDay(null); }}
+                    onDrop={(ev) => {
+                      ev.preventDefault();
+                      const id = ev.dataTransfer.getData("text/plain") || draggingId;
+                      setDragOverDay(null);
+                      setDraggingId(null);
+                      if (id) moveEntryToDate(id, key);
+                    }}
                     className={`relative min-h-[72px] sm:min-h-[110px] p-1.5 text-left hover:bg-secondary/40 transition-colors overflow-hidden ${
                       inMonth ? "" : "opacity-40"
-                    } ${examColor ? "" : "bg-background"}`}
+                    } ${examColor ? "" : "bg-background"} ${dragOverDay === key ? "ring-2 ring-primary ring-inset" : ""}`}
                     style={examColor ? {
                       backgroundColor: `color-mix(in srgb, ${examColor} 10%, var(--background, white))`,
                       borderLeft: `3px solid ${examColor}`,
                     } : undefined}
                   >
+
                     <div className="flex items-center justify-between mb-1">
                       <span
                         className={`font-mono text-xs tabular-nums ${
@@ -684,7 +802,16 @@ const Calendar = () => {
                 return (
                   <div
                     key={key}
-                    className={`flex-none w-[48vw] sm:w-auto rounded-lg overflow-hidden flex flex-col ${examColor ? "" : "bg-secondary/20"}`}
+                    onDragOver={(ev) => { if (draggingId) { ev.preventDefault(); ev.dataTransfer.dropEffect = "move"; setDragOverDay(key); } }}
+                    onDragLeave={() => { if (dragOverDay === key) setDragOverDay(null); }}
+                    onDrop={(ev) => {
+                      ev.preventDefault();
+                      const id = ev.dataTransfer.getData("text/plain") || draggingId;
+                      setDragOverDay(null);
+                      setDraggingId(null);
+                      if (id) moveEntryToDate(id, key);
+                    }}
+                    className={`flex-none w-[48vw] sm:w-auto rounded-lg overflow-hidden flex flex-col ${examColor ? "" : "bg-secondary/20"} ${dragOverDay === key ? "ring-2 ring-primary" : ""}`}
                     style={examColor ? {
                       backgroundColor: `color-mix(in srgb, ${examColor} 8%, transparent)`,
                       borderLeft: `3px solid ${examColor}`,
@@ -718,10 +845,18 @@ const Calendar = () => {
                           <button
                             key={e.id}
                             onClick={() => { setOpenDay(key); resetForm(); }}
+                            draggable
+                            onDragStart={(ev) => {
+                              ev.stopPropagation();
+                              ev.dataTransfer.setData("text/plain", e.id);
+                              ev.dataTransfer.effectAllowed = "move";
+                              setDraggingId(e.id);
+                            }}
+                            onDragEnd={() => { setDraggingId(null); setDragOverDay(null); }}
                             title={[meta.full, courseName, e.label].filter(Boolean).join(" · ")}
-                            className={`w-full text-left px-1.5 py-1 rounded flex items-center gap-1 ${
+                            className={`w-full text-left px-1.5 py-1 rounded flex items-center gap-1 cursor-grab active:cursor-grabbing ${
                               isExam ? "border-2 font-bold" : "border"
-                            }`}
+                            } ${draggingId === e.id ? "opacity-50" : ""}`}
                             style={{
                               backgroundColor: `color-mix(in srgb, ${color} ${isExam ? 20 : 12}%, transparent)`,
                               borderColor: isExam ? color : `color-mix(in srgb, ${color} 30%, transparent)`,
@@ -735,6 +870,7 @@ const Calendar = () => {
                       })}
                     </div>
                   </div>
+
                 );
               })}
             </div>
