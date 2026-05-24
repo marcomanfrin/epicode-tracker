@@ -31,6 +31,13 @@ export const AppNavbar = ({ actions, onShare }: AppNavbarProps) => {
           >
             Calendario
           </NavLink>
+          <NavLink
+            to="/libretto"
+            className="label-meta px-3 py-1 rounded transition-colors hover:bg-background/50 text-muted-foreground"
+            activeClassName="bg-background text-foreground shadow-sm"
+          >
+            Libretto
+          </NavLink>
         </div>
 
         <div className="flex-1" />
