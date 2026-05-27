@@ -1,0 +1,1 @@
+{"nodes": [{"id": "migration_courses_numeric", "label": "SQL: alter courses numeric columns", "file_type": "document", "source_file": "supabase/migrations/20260421104914_f0fd45fe-92b4-4fb3-8897-a92895eae144.sql", "source_location": "1", "source_url": null, "captured_at": null, "author": null, "contributor": null}], "edges": [], "hyperedges": []}
