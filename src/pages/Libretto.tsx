@@ -121,6 +121,17 @@ const Libretto = () => {
     base: graduationBase(exams),
   }), [exams]);
 
+  const chartData = useMemo(() => {
+    const sorted = [...exams].sort((a, b) => a.date.localeCompare(b.date));
+    return sorted.map((e) => ({
+      date: formatDate(e.date),
+      iso: e.date,
+      voto: e.voto,
+      lode: e.lode,
+      name: e.name,
+    }));
+  }, [exams]);
+
   const resetForm = () => {
     setName("");
     setDate(todayIso());
