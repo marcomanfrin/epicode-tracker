@@ -1,10 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Trash2, GraduationCap, Award, BookCheck, Copy, Check } from "lucide-react";
+import { Plus, Trash2, GraduationCap, Award, BookCheck, Copy, Check, TrendingUp } from "lucide-react";
 import { AppNavbar } from "@/components/AppNavbar";
 import { useAuth } from "@/hooks/useAuth";
 import { useShare } from "@/hooks/useShare";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 import {
   Dialog,
   DialogContent,
