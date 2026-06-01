@@ -99,53 +99,6 @@ export type Database = {
           },
         ]
       }
-      exams: {
-        Row: {
-          cfu: number
-          course_id: string | null
-          created_at: string
-          date: string
-          id: string
-          lode: boolean
-          name: string
-          updated_at: string
-          user_id: string
-          voto: number
-        }
-        Insert: {
-          cfu: number
-          course_id?: string | null
-          created_at?: string
-          date: string
-          id?: string
-          lode?: boolean
-          name: string
-          updated_at?: string
-          user_id: string
-          voto: number
-        }
-        Update: {
-          cfu?: number
-          course_id?: string | null
-          created_at?: string
-          date?: string
-          id?: string
-          lode?: boolean
-          name?: string
-          updated_at?: string
-          user_id?: string
-          voto?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "exams_course_id_fkey"
-            columns: ["course_id"]
-            isOneToOne: false
-            referencedRelation: "courses"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       courses: {
         Row: {
           caricato: number
