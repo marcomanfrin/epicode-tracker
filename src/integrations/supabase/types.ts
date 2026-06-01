@@ -99,6 +99,45 @@ export type Database = {
           },
         ]
       }
+      courses: {
+        Row: {
+          caricato: number
+          color: string | null
+          created_at: string
+          fatto: number
+          id: string
+          name: string
+          position: number
+          totale: number
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          caricato?: number
+          color?: string | null
+          created_at?: string
+          fatto?: number
+          id?: string
+          name: string
+          position?: number
+          totale?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          caricato?: number
+          color?: string | null
+          created_at?: string
+          fatto?: number
+          id?: string
+          name?: string
+          position?: number
+          totale?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       exams: {
         Row: {
           cfu: number
@@ -145,45 +184,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      courses: {
-        Row: {
-          caricato: number
-          color: string | null
-          created_at: string
-          fatto: number
-          id: string
-          name: string
-          position: number
-          totale: number
-          updated_at: string
-          user_id: string | null
-        }
-        Insert: {
-          caricato?: number
-          color?: string | null
-          created_at?: string
-          fatto?: number
-          id?: string
-          name: string
-          position?: number
-          totale?: number
-          updated_at?: string
-          user_id?: string | null
-        }
-        Update: {
-          caricato?: number
-          color?: string | null
-          created_at?: string
-          fatto?: number
-          id?: string
-          name?: string
-          position?: number
-          totale?: number
-          updated_at?: string
-          user_id?: string | null
-        }
-        Relationships: []
       }
       share_tokens: {
         Row: {
