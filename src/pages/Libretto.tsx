@@ -1,10 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Trash2, GraduationCap, Award, BookCheck, Copy, Check } from "lucide-react";
+import { Plus, Trash2, GraduationCap, Award, BookCheck, Copy, Check, TrendingUp } from "lucide-react";
 import { AppNavbar } from "@/components/AppNavbar";
 import { useAuth } from "@/hooks/useAuth";
 import { useShare } from "@/hooks/useShare";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 import {
   Dialog,
   DialogContent,
@@ -111,6 +120,17 @@ const Libretto = () => {
     lodi: lodeCount(exams),
     base: graduationBase(exams),
   }), [exams]);
+
+  const chartData = useMemo(() => {
+    const sorted = [...exams].sort((a, b) => a.date.localeCompare(b.date));
+    return sorted.map((e) => ({
+      date: formatDate(e.date),
+      iso: e.date,
+      voto: e.voto,
+      lode: e.lode,
+      name: e.name,
+    }));
+  }, [exams]);
 
   const resetForm = () => {
     setName("");
@@ -223,6 +243,75 @@ const Libretto = () => {
           />
         </div>
         <div className="hairline" />
+      </section>
+
+      {/* CHART */}
+      <section className="container-editorial pb-12 md:pb-16">
+        <div className="flex items-center gap-2 mb-6">
+          <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          <span className="label-meta">Andamento voti</span>
+        </div>
+        {loading && (
+          <div className="h-[260px] md:h-[320px] flex items-center justify-center text-muted-foreground label-meta">
+            Caricamento…
+          </div>
+        )}
+        {!loading && exams.length === 0 && (
+          <div className="h-[260px] md:h-[320px] flex items-center justify-center text-muted-foreground font-sans">
+            Nessun esame registrato.
+          </div>
+        )}
+        {!loading && exams.length > 0 && (
+          <div className="h-[260px] md:h-[320px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={chartData} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="votoGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.25} />
+                    <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                <XAxis
+                  dataKey="date"
+                  tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }}
+                  axisLine={{ stroke: "hsl(var(--border))" }}
+                  tickLine={false}
+                />
+                <YAxis
+                  domain={[16, 32]}
+                  tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "hsl(var(--popover))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: "0.375rem",
+                    fontSize: "0.875rem",
+                    color: "hsl(var(--foreground))",
+                  }}
+                  formatter={(value: number, _name: string, props: any) => {
+                    const v = Number(value);
+                    const isLode = props.payload.lode && v === 30;
+                    return [isLode ? "30L" : String(v), "Voto"];
+                  }}
+                  labelFormatter={(label: string) => label}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="voto"
+                  stroke="hsl(var(--primary))"
+                  strokeWidth={2}
+                  fill="url(#votoGradient)"
+                  dot={{ r: 4, strokeWidth: 2, fill: "hsl(var(--background))", stroke: "hsl(var(--primary))" }}
+                  activeDot={{ r: 6, strokeWidth: 2, fill: "hsl(var(--primary))", stroke: "hsl(var(--background))" }}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        )}
       </section>
 
       {/* EXAM LIST */}
