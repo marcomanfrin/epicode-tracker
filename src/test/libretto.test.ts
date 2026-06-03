@@ -42,9 +42,9 @@ describe("libretto", () => {
   it("lodeCount counts only honors entries", () => {
     expect(
       lodeCount([
-        { voto: 30, lode: true, cfu: 6 },
-        { voto: 30, lode: false, cfu: 6 },
-        { voto: 30, lode: true, cfu: 6 },
+        { voto: 100, lode: true, cfu: 6 },
+        { voto: 100, lode: false, cfu: 6 },
+        { voto: 100, lode: true, cfu: 6 },
       ]),
     ).toBe(2);
   });
@@ -52,15 +52,15 @@ describe("libretto", () => {
   it("graduationBase converts media on /110 scale", () => {
     expect(
       graduationBase([
-        { voto: 30, lode: false, cfu: 6 },
-        { voto: 24, lode: false, cfu: 12 },
+        { voto: 100, lode: false, cfu: 6 },
+        { voto: 80, lode: false, cfu: 12 },
       ]),
     ).toBe(95.33);
   });
 
-  it("formatVoto renders 30L only when lode and voto=30", () => {
-    expect(formatVoto(30, true)).toBe("30L");
-    expect(formatVoto(30, false)).toBe("30");
-    expect(formatVoto(28, true)).toBe("28");
+  it("formatVoto renders 100L only when lode and voto=100", () => {
+    expect(formatVoto(100, true)).toBe("100L");
+    expect(formatVoto(100, false)).toBe("100");
+    expect(formatVoto(90, true)).toBe("90");
   });
 });
