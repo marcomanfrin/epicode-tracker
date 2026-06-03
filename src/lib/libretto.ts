@@ -21,8 +21,8 @@ export const lodeCount = (exams: ExamLike[]): number =>
 
 export const graduationBase = (exams: ExamLike[]): number => {
   const media = weightedAverage(exams);
-  return round2((media * 110) / 30);
+  return round2((media * 110) / 100);
 };
 
 export const formatVoto = (voto: number, lode: boolean): string =>
-  lode && voto === 30 ? "30L" : String(voto);
+  lode && voto === 100 ? "100L" : String(voto);

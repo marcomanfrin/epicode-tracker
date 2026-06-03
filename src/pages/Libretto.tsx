@@ -81,7 +81,7 @@ const Libretto = () => {
 
   const [name, setName] = useState("");
   const [date, setDate] = useState(todayIso());
-  const [voto, setVoto] = useState<string>("30");
+  const [voto, setVoto] = useState<string>("100");
   const [lode, setLode] = useState(false);
   const [cfu, setCfu] = useState<string>("");
   const [courseId, setCourseId] = useState<string>("");
@@ -151,8 +151,8 @@ const Libretto = () => {
       toast.error("Inserisci il nome dell'esame");
       return;
     }
-    if (isNaN(votoNum) || votoNum < 18 || votoNum > 30) {
-      toast.error("Il voto deve essere tra 18 e 30");
+    if (isNaN(votoNum) || votoNum < 0 || votoNum > 100) {
+      toast.error("Il voto deve essere tra 0 e 100");
       return;
     }
     if (isNaN(cfuNum) || cfuNum <= 0) {
@@ -164,7 +164,7 @@ const Libretto = () => {
       name: trimmedName,
       date,
       voto: votoNum,
-      lode: votoNum === 30 && lode,
+      lode: votoNum === 100 && lode,
       cfu: cfuNum,
       course_id: courseId || null,
     };
@@ -279,7 +279,7 @@ const Libretto = () => {
                   tickLine={false}
                 />
                 <YAxis
-                  domain={[16, 32]}
+                  domain={[0, 100]}
                   tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }}
                   axisLine={false}
                   tickLine={false}
@@ -294,8 +294,8 @@ const Libretto = () => {
                   }}
                   formatter={(value: number, _name: string, props: any) => {
                     const v = Number(value);
-                    const isLode = props.payload.lode && v === 30;
-                    return [isLode ? "30L" : String(v), "Voto"];
+                    const isLode = props.payload.lode && v === 100;
+                    return [isLode ? "100L" : String(v), "Voto"];
                   }}
                   labelFormatter={(label: string) => label}
                 />
@@ -508,8 +508,8 @@ const Libretto = () => {
                   </label>
                   <input
                     type="number"
-                    min={18}
-                    max={30}
+                    min={0}
+                    max={100}
                     value={voto}
                     onChange={(ev) => setVoto(ev.target.value)}
                     className="w-full bg-transparent border-b border-surface-dark-foreground/40 focus:border-accent outline-none py-3 font-mono text-2xl tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
@@ -517,7 +517,7 @@ const Libretto = () => {
                 </div>
                 <label
                   className={`flex items-center gap-2 cursor-pointer select-none label-meta pb-3 transition-opacity ${
-                    parseInt(voto, 10) === 30 ? "opacity-100" : "opacity-40 pointer-events-none"
+                    parseInt(voto, 10) === 100 ? "opacity-100" : "opacity-40 pointer-events-none"
                   }`}
                 >
                   <input
@@ -544,7 +544,7 @@ const Libretto = () => {
       <footer className="container-editorial py-10">
         <div className="hairline mb-6" />
         <p className="label-meta">
-          Voto base laurea calcolato come (media × 110) / 30 ·{" "}
+          Voto base laurea calcolato come (media × 110) / 100 ·{" "}
           {new Date().getFullYear()}
         </p>
       </footer>
@@ -623,13 +623,13 @@ const Stat = ({
 );
 
 const VotoBadge = ({ voto, lode }: { voto: number; lode: boolean }) => {
-  const isLode = lode && voto === 30;
+  const isLode = lode && voto === 100;
   return (
     <span
       className={`inline-flex items-center font-mono text-lg tabular-nums px-2.5 py-1 ${
         isLode
           ? "bg-accent text-accent-foreground"
-          : voto >= 28
+          : voto >= 93
           ? "bg-primary/10 text-primary"
           : "bg-secondary"
       }`}
