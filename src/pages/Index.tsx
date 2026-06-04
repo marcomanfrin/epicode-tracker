@@ -445,7 +445,8 @@ const Index = () => {
       </section>
 
       {/* DARK SECTION — add form */}
-      <section className="bg-surface-dark text-surface-dark-foreground">
+      <section id="add-course" className="bg-surface-dark text-surface-dark-foreground scroll-mt-16">
+
         <div className="container-editorial py-16 md:py-24">
           <div className="grid md:grid-cols-[1fr_1fr] gap-10 items-end">
             <div>
