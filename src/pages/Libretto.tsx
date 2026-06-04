@@ -607,14 +607,18 @@ const Stat = ({
   accent?: boolean;
   icon?: typeof BookCheck;
 }) => (
-  <div className="bg-background p-5 md:p-6 flex flex-col gap-2">
+  <div
+    className={`p-5 md:p-6 flex flex-col gap-3 ${
+      accent ? "bg-accent/10" : "bg-background"
+    }`}
+  >
     <span className="label-meta inline-flex items-center gap-1.5">
       {Icon && <Icon className="h-3 w-3" />}
       {label}
     </span>
     <span
-      className={`font-mono tabular-nums leading-none ${
-        accent ? "text-3xl md:text-5xl" : "text-2xl md:text-4xl"
+      className={`font-serif tabular-nums leading-none tracking-tight ${
+        accent ? "text-4xl md:text-6xl text-primary" : "text-3xl md:text-5xl"
       }`}
     >
       {value}
