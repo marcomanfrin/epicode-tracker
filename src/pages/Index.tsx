@@ -217,8 +217,8 @@ const Index = () => {
         }
       />
       {/* HERO */}
-      <header className="container-editorial pt-10 pb-12 md:pt-16 md:pb-20">
-        <h1 className="font-serif text-5xl md:text-7xl leading-[0.95] tracking-tight">
+      <header className="container-editorial pt-6 pb-8 md:pt-16 md:pb-20">
+        <h1 className="font-serif text-4xl sm:text-5xl md:text-7xl leading-[0.95] tracking-tight">
           Moduli <span className="italic text-primary">seguiti</span>,
           <br />
           moduli da{" "}
@@ -228,7 +228,7 @@ const Index = () => {
           </span>
           .
         </h1>
-        <p className="mt-6 max-w-xl text-base md:text-lg text-muted-foreground font-sans">
+        <p className="hidden sm:block mt-6 max-w-xl text-base md:text-lg text-muted-foreground font-sans">
           Aggiungi i corsi impostando il numero totale di moduli, poi man mano
           aggiorna con i moduli che vengono caricati e con i moduli che hai
           seguito.
