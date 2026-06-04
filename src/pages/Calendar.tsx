@@ -690,66 +690,68 @@ const Calendar = () => {
   return (
     <main className="min-h-screen bg-background text-foreground">
       <AppNavbar onShare={openShare} />
-      <header className="container-editorial pt-10 pb-12 md:pt-16 md:pb-20">
-        <h1 className="font-serif text-5xl md:text-7xl leading-[0.95] tracking-tight">
+      <header className="container-editorial pt-6 pb-6 md:pt-16 md:pb-12">
+        <h1 className="font-serif text-4xl sm:text-5xl md:text-7xl leading-[0.95] tracking-tight">
           Il tuo <span className="italic text-primary">calendario</span>.
         </h1>
-        <p className="mt-6 max-w-xl text-base md:text-lg text-muted-foreground font-sans">
+        <p className="hidden sm:block mt-6 max-w-xl text-base md:text-lg text-muted-foreground font-sans">
           Tocca un giorno per aggiungere annotazioni e todo.
         </p>
       </header>
 
       <section className="container-editorial pb-20">
-        {/* View switcher */}
-        <div className="flex items-center justify-end mb-4">
-          <div className="flex items-center gap-0.5 bg-secondary/60 rounded p-0.5">
-            {(["month", "week", "day"] as CalView[]).map((v) => (
-              <button
-                key={v}
-                onClick={() => setView(v)}
-                className={`label-meta px-3 py-1 rounded transition-colors ${
-                  view === v
-                    ? "bg-background text-foreground shadow-sm"
-                    : "hover:bg-background/50 text-muted-foreground"
-                }`}
-              >
-                {v === "month" ? "Mese" : v === "week" ? "Sett." : "Giorno"}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Navigation */}
-        <div className="flex items-center justify-between mb-4 gap-2">
-          <button
-            onClick={() => navigate(-1)}
-            className="p-2 hover:bg-secondary rounded transition-colors shrink-0"
-            aria-label="Precedente"
-          >
-            <ChevronLeft className="h-5 w-5" />
-          </button>
-          <div className="flex flex-col items-center gap-1 min-w-0">
+        {/* Header: navigazione + switcher vista */}
+        <div className="flex flex-col gap-3 mb-4 sm:flex-row sm:items-center sm:justify-between">
+          {/* Riga 1: navigazione mese */}
+          <div className="flex items-center justify-between gap-2 sm:flex-1 sm:min-w-0">
+            <button
+              onClick={() => navigate(-1)}
+              className="p-2 hover:bg-secondary rounded transition-colors shrink-0"
+              aria-label="Precedente"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </button>
             <h2
-              className={`font-serif text-center ${
-                view === "day" ? "text-lg md:text-2xl capitalize" : "text-2xl md:text-3xl"
+              className={`font-serif text-center truncate flex-1 ${
+                view === "day" ? "text-lg md:text-2xl capitalize" : "text-xl sm:text-2xl md:text-3xl"
               }`}
             >
               {headerLabel}
             </h2>
             <button
+              onClick={() => navigate(1)}
+              className="p-2 hover:bg-secondary rounded transition-colors shrink-0"
+              aria-label="Successivo"
+            >
+              <ChevronRight className="h-5 w-5" />
+            </button>
+          </div>
+
+          {/* Riga 2: switcher vista + oggi */}
+          <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0">
+            <button
               onClick={() => setCursor(today)}
-              className="label-meta text-xs px-2.5 py-0.5 rounded border border-border-soft hover:bg-secondary hover:text-primary transition-colors"
+              className="label-meta text-xs px-3 py-1.5 rounded border border-border-soft hover:bg-secondary hover:text-primary transition-colors"
             >
               Oggi
             </button>
+            <div className="flex items-center gap-0.5 bg-secondary/60 rounded p-0.5">
+              {(["month", "week", "day"] as CalView[]).map((v) => (
+                <button
+                  key={v}
+                  onClick={() => setView(v)}
+                  aria-label={v === "month" ? "Mese" : v === "week" ? "Settimana" : "Giorno"}
+                  className={`label-meta px-3 py-1.5 rounded transition-colors ${
+                    view === v
+                      ? "bg-background text-primary shadow-sm ring-1 ring-primary/20"
+                      : "hover:bg-background/50 text-muted-foreground"
+                  }`}
+                >
+                  {v === "month" ? "Mese" : v === "week" ? "Sett." : "Giorno"}
+                </button>
+              ))}
+            </div>
           </div>
-          <button
-            onClick={() => navigate(1)}
-            className="p-2 hover:bg-secondary rounded transition-colors shrink-0"
-            aria-label="Successivo"
-          >
-            <ChevronRight className="h-5 w-5" />
-          </button>
         </div>
 
         {/* ── MONTH VIEW ── */}
