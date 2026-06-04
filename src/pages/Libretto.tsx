@@ -212,8 +212,8 @@ const Libretto = () => {
       />
 
       {/* HERO */}
-      <header className="container-editorial pt-10 pb-12 md:pt-16 md:pb-20">
-        <h1 className="font-serif text-5xl md:text-7xl leading-[0.95] tracking-tight">
+      <header className="container-editorial pt-6 pb-8 md:pt-16 md:pb-20">
+        <h1 className="font-serif text-4xl sm:text-5xl md:text-7xl leading-[0.95] tracking-tight">
           Il tuo <span className="italic text-primary">libretto</span>,
           <br />
           esame dopo{" "}
@@ -223,14 +223,14 @@ const Libretto = () => {
           </span>
           .
         </h1>
-        <p className="mt-6 max-w-xl text-base md:text-lg text-muted-foreground font-sans">
+        <p className="hidden sm:block mt-6 max-w-xl text-base md:text-lg text-muted-foreground font-sans">
           Registra ogni esame sostenuto con data, voto e CFU. La media ponderata
           e il voto di partenza per la laurea si aggiornano in automatico.
         </p>
       </header>
 
       {/* STATS */}
-      <section className="container-editorial pb-12 md:pb-16">
+      <section className="container-editorial pb-10 md:pb-16">
         <div className="hairline" />
         <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-border-soft">
           <Stat label="Media ponderata" value={stats.media ? stats.media.toFixed(2) : "—"} accent />
