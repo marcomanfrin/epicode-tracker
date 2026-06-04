@@ -495,6 +495,16 @@ const Index = () => {
           {new Date().getFullYear()}
         </p>
       </footer>
+
+      {/* Mobile FAB — scroll to add form */}
+      <a
+        href="#add-course"
+        aria-label="Aggiungi corso"
+        className="sm:hidden fixed right-4 bottom-4 z-30 h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center hover:scale-105 active:scale-95 transition-transform"
+        style={{ marginBottom: "env(safe-area-inset-bottom)" }}
+      >
+        <Plus className="h-6 w-6" />
+      </a>
       <Dialog open={shareOpen} onOpenChange={setShareOpen}>
         <DialogContent>
           <DialogHeader>
