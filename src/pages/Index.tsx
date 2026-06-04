@@ -217,8 +217,8 @@ const Index = () => {
         }
       />
       {/* HERO */}
-      <header className="container-editorial pt-10 pb-12 md:pt-16 md:pb-20">
-        <h1 className="font-serif text-5xl md:text-7xl leading-[0.95] tracking-tight">
+      <header className="container-editorial pt-6 pb-8 md:pt-16 md:pb-20">
+        <h1 className="font-serif text-4xl sm:text-5xl md:text-7xl leading-[0.95] tracking-tight">
           Moduli <span className="italic text-primary">seguiti</span>,
           <br />
           moduli da{" "}
@@ -228,7 +228,7 @@ const Index = () => {
           </span>
           .
         </h1>
-        <p className="mt-6 max-w-xl text-base md:text-lg text-muted-foreground font-sans">
+        <p className="hidden sm:block mt-6 max-w-xl text-base md:text-lg text-muted-foreground font-sans">
           Aggiungi i corsi impostando il numero totale di moduli, poi man mano
           aggiorna con i moduli che vengono caricati e con i moduli che hai
           seguito.
@@ -445,7 +445,8 @@ const Index = () => {
       </section>
 
       {/* DARK SECTION — add form */}
-      <section className="bg-surface-dark text-surface-dark-foreground">
+      <section id="add-course" className="bg-surface-dark text-surface-dark-foreground scroll-mt-16">
+
         <div className="container-editorial py-16 md:py-24">
           <div className="grid md:grid-cols-[1fr_1fr] gap-10 items-end">
             <div>
@@ -494,6 +495,16 @@ const Index = () => {
           {new Date().getFullYear()}
         </p>
       </footer>
+
+      {/* Mobile FAB — scroll to add form */}
+      <a
+        href="#add-course"
+        aria-label="Aggiungi corso"
+        className="sm:hidden fixed right-4 bottom-4 z-30 h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center hover:scale-105 active:scale-95 transition-transform"
+        style={{ marginBottom: "env(safe-area-inset-bottom)" }}
+      >
+        <Plus className="h-6 w-6" />
+      </a>
       <Dialog open={shareOpen} onOpenChange={setShareOpen}>
         <DialogContent>
           <DialogHeader>

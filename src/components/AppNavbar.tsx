@@ -72,8 +72,8 @@ export const AppNavbar = ({ actions, onShare }: AppNavbarProps) => {
               end={end}
               aria-label={label}
               title={label}
-              className="flex-1 inline-flex items-center justify-center h-8 rounded transition-colors hover:bg-background/50 text-muted-foreground"
-              activeClassName="bg-background text-foreground shadow-sm"
+              className="flex-1 inline-flex items-center justify-center h-9 rounded transition-all text-muted-foreground hover:bg-background/50 hover:text-foreground"
+              activeClassName="bg-background text-primary shadow-sm ring-1 ring-primary/20"
             >
               <Icon className="h-4 w-4" />
             </NavLink>

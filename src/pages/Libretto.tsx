@@ -212,8 +212,8 @@ const Libretto = () => {
       />
 
       {/* HERO */}
-      <header className="container-editorial pt-10 pb-12 md:pt-16 md:pb-20">
-        <h1 className="font-serif text-5xl md:text-7xl leading-[0.95] tracking-tight">
+      <header className="container-editorial pt-6 pb-8 md:pt-16 md:pb-20">
+        <h1 className="font-serif text-4xl sm:text-5xl md:text-7xl leading-[0.95] tracking-tight">
           Il tuo <span className="italic text-primary">libretto</span>,
           <br />
           esame dopo{" "}
@@ -223,14 +223,14 @@ const Libretto = () => {
           </span>
           .
         </h1>
-        <p className="mt-6 max-w-xl text-base md:text-lg text-muted-foreground font-sans">
+        <p className="hidden sm:block mt-6 max-w-xl text-base md:text-lg text-muted-foreground font-sans">
           Registra ogni esame sostenuto con data, voto e CFU. La media ponderata
           e il voto di partenza per la laurea si aggiornano in automatico.
         </p>
       </header>
 
       {/* STATS */}
-      <section className="container-editorial pb-12 md:pb-16">
+      <section className="container-editorial pb-10 md:pb-16">
         <div className="hairline" />
         <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-border-soft">
           <Stat label="Media ponderata" value={stats.media ? stats.media.toFixed(2) : "—"} accent />
@@ -436,7 +436,7 @@ const Libretto = () => {
       </section>
 
       {/* DARK SECTION — add form */}
-      <section className="bg-surface-dark text-surface-dark-foreground">
+      <section id="add-exam" className="bg-surface-dark text-surface-dark-foreground scroll-mt-16">
         <div className="container-editorial py-16 md:py-24">
           <div className="grid md:grid-cols-[1fr_1fr] gap-10 md:items-start">
             <div>
@@ -549,6 +549,16 @@ const Libretto = () => {
         </p>
       </footer>
 
+      {/* Mobile FAB — scroll to add form */}
+      <a
+        href="#add-exam"
+        aria-label="Aggiungi esame"
+        className="sm:hidden fixed right-4 bottom-4 z-30 h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center hover:scale-105 active:scale-95 transition-transform"
+        style={{ marginBottom: "env(safe-area-inset-bottom)" }}
+      >
+        <Plus className="h-6 w-6" />
+      </a>
+
       <Dialog open={shareOpen} onOpenChange={setShareOpen}>
         <DialogContent>
           <DialogHeader>
@@ -607,14 +617,18 @@ const Stat = ({
   accent?: boolean;
   icon?: typeof BookCheck;
 }) => (
-  <div className="bg-background p-5 md:p-6 flex flex-col gap-2">
+  <div
+    className={`p-5 md:p-6 flex flex-col gap-3 ${
+      accent ? "bg-accent/10" : "bg-background"
+    }`}
+  >
     <span className="label-meta inline-flex items-center gap-1.5">
       {Icon && <Icon className="h-3 w-3" />}
       {label}
     </span>
     <span
-      className={`font-mono tabular-nums leading-none ${
-        accent ? "text-3xl md:text-5xl" : "text-2xl md:text-4xl"
+      className={`font-serif tabular-nums leading-none tracking-tight ${
+        accent ? "text-4xl md:text-6xl text-primary" : "text-3xl md:text-5xl"
       }`}
     >
       {value}
