@@ -123,3 +123,27 @@
     @apply text-xs uppercase tracking-[0.15em] text-muted-foreground;
   }
 }
+
+@layer utilities {
+  @keyframes page-slide-from-right {
+    from { opacity: 0; transform: translateX(24px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes page-slide-from-left {
+    from { opacity: 0; transform: translateX(-24px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes page-fade {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .animate-page-from-right { animation: page-slide-from-right 0.26s ease-out both; }
+  .animate-page-from-left  { animation: page-slide-from-left  0.26s ease-out both; }
+  .animate-page-fade       { animation: page-fade 0.22s ease-out both; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .animate-page-from-right,
+    .animate-page-from-left,
+    .animate-page-fade { animation: none; }
+  }
+}
