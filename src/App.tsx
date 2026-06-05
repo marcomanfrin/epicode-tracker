@@ -18,8 +18,6 @@ const queryClient = new QueryClient();
 
 const Protected = ({ children }: { children: JSX.Element }) => {
   const { user, loading } = useAuth();
-const Protected = ({ children }: { children: JSX.Element }) => {
-  const { user, loading } = useAuth();
   if (loading) return null;
   if (!user) return <Navigate to="/auth" replace />;
   return children;
