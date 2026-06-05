@@ -765,7 +765,7 @@ const Calendar = () => {
                 </div>
               ))}
             </div>
-            <div className="grid grid-cols-7 gap-px bg-border-soft">
+            <div data-no-swipe className="grid grid-cols-7 gap-px bg-border-soft">
               {monthDays.map((d) => {
                 const key = fmt(d);
                 const inMonth = d.getMonth() === cursor.getMonth();
