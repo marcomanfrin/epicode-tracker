@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { ThemeProvider } from "@/hooks/useTheme";
 import { useSwipeNavigation } from "@/hooks/useSwipeNavigation";
+import { PageTransition } from "@/components/PageTransition";
 import Index from "./pages/Index.tsx";
 import Auth from "./pages/Auth.tsx";
 import ResetPassword from "./pages/ResetPassword.tsx";
@@ -37,15 +38,17 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <SwipeNav />
-          <Routes>
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/share/:token" element={<Shared />} />
-            <Route path="/calendar" element={<Protected><Calendar /></Protected>} />
-            <Route path="/libretto" element={<Protected><Libretto /></Protected>} />
-            <Route path="/" element={<Protected><Index /></Protected>} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <PageTransition>
+            <Routes>
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/share/:token" element={<Shared />} />
+              <Route path="/calendar" element={<Protected><Calendar /></Protected>} />
+              <Route path="/libretto" element={<Protected><Libretto /></Protected>} />
+              <Route path="/" element={<Protected><Index /></Protected>} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </PageTransition>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
