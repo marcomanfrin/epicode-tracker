@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { ThemeProvider } from "@/hooks/useTheme";
+import { useSwipeNavigation } from "@/hooks/useSwipeNavigation";
 import Index from "./pages/Index.tsx";
 import Auth from "./pages/Auth.tsx";
 import ResetPassword from "./pages/ResetPassword.tsx";
@@ -17,9 +18,16 @@ const queryClient = new QueryClient();
 
 const Protected = ({ children }: { children: JSX.Element }) => {
   const { user, loading } = useAuth();
+const Protected = ({ children }: { children: JSX.Element }) => {
+  const { user, loading } = useAuth();
   if (loading) return null;
   if (!user) return <Navigate to="/auth" replace />;
   return children;
+};
+
+const SwipeNav = () => {
+  useSwipeNavigation();
+  return null;
 };
 
 const App = () => (
@@ -30,6 +38,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
+          <SwipeNav />
           <Routes>
             <Route path="/auth" element={<Auth />} />
             <Route path="/reset-password" element={<ResetPassword />} />
