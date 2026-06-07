@@ -580,6 +580,27 @@ const Libretto = () => {
                   className="bg-transparent border-b border-surface-dark-foreground/40 focus:border-accent outline-none py-3 font-mono text-lg placeholder:text-surface-dark-foreground/40 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 />
               </div>
+              <div>
+                <label className="label-meta text-surface-dark-foreground/60 block mb-2">
+                  Semestre (opzionale)
+                </label>
+                <Select
+                  value={semester || SEMESTER_NONE}
+                  onValueChange={(v) => setSemester(v === SEMESTER_NONE ? "" : v)}
+                >
+                  <SelectTrigger className="bg-transparent border-0 border-b border-surface-dark-foreground/40 rounded-none focus:border-accent focus:ring-0 px-0 py-3 h-auto font-sans text-lg text-surface-dark-foreground [&>span]:text-surface-dark-foreground">
+                    <SelectValue placeholder="Nessuno" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={SEMESTER_NONE}>Nessuno</SelectItem>
+                    {SEMESTERS.map((s) => (
+                      <SelectItem key={s} value={s}>
+                        {formatSemester(s)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <div className="flex items-end gap-4">
                 <div className="flex-1">
                   <label className="label-meta text-surface-dark-foreground/60 block mb-2">
