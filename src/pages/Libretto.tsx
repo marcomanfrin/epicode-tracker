@@ -97,6 +97,7 @@ const Libretto = () => {
   const [semester, setSemester] = useState<string>("");
 
   const [editingExam, setEditingExam] = useState<Exam | null>(null);
+  const [filterSemester, setFilterSemester] = useState<string>("");
 
   useEffect(() => {
     if (!user) return;
@@ -143,6 +144,11 @@ const Libretto = () => {
       name: e.name,
     }));
   }, [exams]);
+
+  const filteredExams = useMemo(() => {
+    if (!filterSemester) return exams;
+    return exams.filter((e) => e.semester === filterSemester);
+  }, [exams, filterSemester]);
 
   const resetForm = () => {
     setName("");
@@ -380,6 +386,20 @@ const Libretto = () => {
               Esami <span className="italic">sostenuti</span>
             </h2>
           </div>
+          <div className="flex items-center gap-2">
+            <span className="label-meta">Semestre</span>
+            <Select value={filterSemester || SEMESTER_NONE} onValueChange={(v) => setFilterSemester(v === SEMESTER_NONE ? "" : v)}>
+              <SelectTrigger className="w-[160px]">
+                <SelectValue placeholder="Tutti" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={SEMESTER_NONE}>Tutti</SelectItem>
+                {SEMESTERS.map((s) => (
+                  <SelectItem key={s} value={s}>{formatSemester(s)}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         {loading && (
@@ -400,7 +420,17 @@ const Libretto = () => {
           </>
         )}
 
-        {!loading && exams.length > 0 && (
+        {!loading && exams.length > 0 && filteredExams.length === 0 && (
+          <>
+            <div className="hairline" />
+            <div className="py-10 text-center text-muted-foreground font-sans">
+              Nessun esame per il semestre selezionato.
+            </div>
+            <div className="hairline" />
+          </>
+        )}
+
+        {!loading && filteredExams.length > 0 && (
           <>
             {/* DESKTOP */}
             <div className="hidden md:block">
@@ -414,7 +444,7 @@ const Libretto = () => {
                 <span />
               </div>
               <div className="hairline" />
-              {exams.map((e) => {
+              {filteredExams.map((e) => {
                 const course = e.course_id ? courseMap.get(e.course_id) : null;
                 return (
                   <div key={e.id}>
@@ -466,7 +496,7 @@ const Libretto = () => {
             {/* MOBILE */}
             <div className="md:hidden">
               <div className="hairline" />
-              {exams.map((e) => {
+              {filteredExams.map((e) => {
                 const course = e.course_id ? courseMap.get(e.course_id) : null;
                 return (
                   <div key={e.id} className="py-4">
