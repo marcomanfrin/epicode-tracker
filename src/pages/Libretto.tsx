@@ -151,6 +151,7 @@ const Libretto = () => {
     setLode(false);
     setCfu("");
     setCourseId("");
+    setSemester("");
   };
 
   const addExam = async (e: React.FormEvent) => {
@@ -179,11 +180,12 @@ const Libretto = () => {
       lode: votoNum === 100 && lode,
       cfu: cfuNum,
       course_id: courseId || null,
+      semester: (semester as Semester) || null,
     };
     const { data, error } = await supabase
       .from("exams")
       .insert(payload)
-      .select("id,name,date,voto,lode,cfu,course_id")
+      .select("id,name,date,voto,lode,cfu,course_id,semester")
       .single();
     if (error) {
       toast.error("Errore: " + error.message);
@@ -211,6 +213,49 @@ const Libretto = () => {
       if (c) setName(c.name);
     }
   };
+
+  const saveEdit = async (updated: Exam) => {
+    const trimmedName = updated.name.trim();
+    if (!trimmedName) {
+      toast.error("Inserisci il nome dell'esame");
+      return;
+    }
+    if (updated.voto < 0 || updated.voto > 100) {
+      toast.error("Il voto deve essere tra 0 e 100");
+      return;
+    }
+    if (!updated.cfu || updated.cfu <= 0) {
+      toast.error("I CFU devono essere maggiori di 0");
+      return;
+    }
+    const patch = {
+      name: trimmedName,
+      date: updated.date,
+      voto: updated.voto,
+      lode: updated.voto === 100 && updated.lode,
+      cfu: updated.cfu,
+      course_id: updated.course_id,
+      semester: updated.semester,
+    };
+    const { data, error } = await supabase
+      .from("exams")
+      .update(patch)
+      .eq("id", updated.id)
+      .select("id,name,date,voto,lode,cfu,course_id,semester")
+      .single();
+    if (error) {
+      toast.error("Errore: " + error.message);
+      return;
+    }
+    setExams((prev) =>
+      prev
+        .map((e) => (e.id === updated.id ? (data as Exam) : e))
+        .sort((a, b) => b.date.localeCompare(a.date))
+    );
+    setEditingExam(null);
+    toast.success("Esame aggiornato");
+  };
+
 
   return (
     <main className="min-h-screen bg-background text-foreground">
