@@ -94,6 +94,9 @@ const Libretto = () => {
   const [lode, setLode] = useState(false);
   const [cfu, setCfu] = useState<string>("");
   const [courseId, setCourseId] = useState<string>("");
+  const [semester, setSemester] = useState<string>("");
+
+  const [editingExam, setEditingExam] = useState<Exam | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -101,7 +104,7 @@ const Libretto = () => {
       const [examsRes, coursesRes] = await Promise.all([
         supabase
           .from("exams")
-          .select("id,name,date,voto,lode,cfu,course_id")
+          .select("id,name,date,voto,lode,cfu,course_id,semester")
           .order("date", { ascending: false })
           .order("created_at", { ascending: false }),
         supabase
