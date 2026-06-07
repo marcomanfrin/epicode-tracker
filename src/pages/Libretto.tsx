@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Trash2, GraduationCap, Award, BookCheck, Copy, Check, TrendingUp } from "lucide-react";
+import { Plus, Trash2, GraduationCap, Award, BookCheck, Copy, Check, TrendingUp, Pencil } from "lucide-react";
 import { AppNavbar } from "@/components/AppNavbar";
 import { useAuth } from "@/hooks/useAuth";
 import { useShare } from "@/hooks/useShare";
