@@ -659,6 +659,13 @@ const Libretto = () => {
         <Plus className="h-6 w-6" />
       </a>
 
+      <EditExamDialog
+        exam={editingExam}
+        courses={courses}
+        onClose={() => setEditingExam(null)}
+        onSave={saveEdit}
+      />
+
       <Dialog open={shareOpen} onOpenChange={setShareOpen}>
         <DialogContent>
           <DialogHeader>
