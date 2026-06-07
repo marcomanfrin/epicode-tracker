@@ -760,4 +760,176 @@ const VotoBadge = ({ voto, lode }: { voto: number; lode: boolean }) => {
   );
 };
 
+const formatSemester = (s: Semester | string): string => {
+  const m = /^y(\d)s(\d)$/.exec(s);
+  if (!m) return s;
+  return `Anno ${m[1]} · Sem ${m[2]}`;
+};
+
+const SemesterBadge = ({ semester }: { semester: Semester | string }) => (
+  <span className="inline-flex items-center font-mono text-[10px] uppercase tracking-wider px-1.5 py-0.5 bg-secondary text-secondary-foreground rounded-sm">
+    {semester}
+  </span>
+);
+
+const EditExamDialog = ({
+  exam,
+  courses,
+  onClose,
+  onSave,
+}: {
+  exam: Exam | null;
+  courses: Course[];
+  onClose: () => void;
+  onSave: (updated: Exam) => void | Promise<void>;
+}) => {
+  const [draft, setDraft] = useState<Exam | null>(null);
+
+  useEffect(() => {
+    setDraft(exam ? { ...exam } : null);
+  }, [exam]);
+
+  if (!draft) return null;
+
+  const update = <K extends keyof Exam>(key: K, value: Exam[K]) =>
+    setDraft((d) => (d ? { ...d, [key]: value } : d));
+
+  return (
+    <Dialog open={!!exam} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Modifica esame</DialogTitle>
+          <DialogDescription>Aggiorna i dettagli dell'esame.</DialogDescription>
+        </DialogHeader>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            onSave(draft);
+          }}
+          className="space-y-4"
+        >
+          <div>
+            <label className="label-meta block mb-1.5">Nome</label>
+            <input
+              value={draft.name}
+              onChange={(e) => update("name", e.target.value)}
+              className="w-full bg-background border border-input rounded-md px-3 py-2 font-sans text-base focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+          </div>
+          {courses.length > 0 && (
+            <div>
+              <label className="label-meta block mb-1.5">Materia</label>
+              <Select
+                value={draft.course_id ?? SEMESTER_NONE}
+                onValueChange={(v) => update("course_id", v === SEMESTER_NONE ? null : v)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Nessuna materia" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={SEMESTER_NONE}>Nessuna materia</SelectItem>
+                  {courses.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      <span className="inline-flex items-center gap-2">
+                        <span
+                          className="h-2.5 w-2.5 rounded-full"
+                          style={{ backgroundColor: courseColor(c) }}
+                        />
+                        {c.name}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+          <div>
+            <label className="label-meta block mb-1.5">Semestre</label>
+            <Select
+              value={draft.semester ?? SEMESTER_NONE}
+              onValueChange={(v) => update("semester", v === SEMESTER_NONE ? null : (v as Semester))}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Nessuno" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={SEMESTER_NONE}>Nessuno</SelectItem>
+                {SEMESTERS.map((s) => (
+                  <SelectItem key={s} value={s}>
+                    {s} — {formatSemester(s)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="label-meta block mb-1.5">Data</label>
+              <input
+                type="date"
+                value={draft.date}
+                onChange={(e) => update("date", e.target.value)}
+                className="w-full bg-background border border-input rounded-md px-3 py-2 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+            </div>
+            <div>
+              <label className="label-meta block mb-1.5">CFU</label>
+              <input
+                type="number"
+                min={1}
+                max={60}
+                value={draft.cfu}
+                onChange={(e) => update("cfu", parseInt(e.target.value, 10) || 0)}
+                className="w-full bg-background border border-input rounded-md px-3 py-2 font-mono text-base focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+            </div>
+          </div>
+          <div className="flex items-end gap-4">
+            <div className="flex-1">
+              <label className="label-meta block mb-1.5">Voto</label>
+              <input
+                type="number"
+                min={0}
+                max={100}
+                value={draft.voto}
+                onChange={(e) => update("voto", parseInt(e.target.value, 10) || 0)}
+                className="w-full bg-background border border-input rounded-md px-3 py-2 font-mono text-lg tabular-nums focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+            </div>
+            <label
+              className={`flex items-center gap-2 cursor-pointer select-none label-meta pb-2 transition-opacity ${
+                draft.voto === 100 ? "opacity-100" : "opacity-40 pointer-events-none"
+              }`}
+            >
+              <input
+                type="checkbox"
+                checked={draft.lode}
+                onChange={(e) => update("lode", e.target.checked)}
+                className="accent-accent"
+              />
+              <Award className="h-3.5 w-3.5" />
+              Lode
+            </label>
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 font-mono text-sm uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Annulla
+            </button>
+            <button
+              type="submit"
+              className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 font-mono text-sm uppercase tracking-wider hover:opacity-90 transition-opacity rounded-md"
+            >
+              <Check className="h-4 w-4" /> Salva
+            </button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 export default Libretto;
