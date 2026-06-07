@@ -147,6 +147,7 @@ export type Database = {
           id: string
           lode: boolean
           name: string
+          semester: string | null
           updated_at: string
           user_id: string
           voto: number
@@ -159,6 +160,7 @@ export type Database = {
           id?: string
           lode?: boolean
           name: string
+          semester?: string | null
           updated_at?: string
           user_id: string
           voto: number
@@ -171,6 +173,7 @@ export type Database = {
           id?: string
           lode?: boolean
           name?: string
+          semester?: string | null
           updated_at?: string
           user_id?: string
           voto?: number

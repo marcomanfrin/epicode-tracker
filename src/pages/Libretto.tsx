@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Trash2, GraduationCap, Award, BookCheck, Copy, Check, TrendingUp } from "lucide-react";
+import { Plus, Trash2, GraduationCap, Award, BookCheck, Copy, Check, TrendingUp, Pencil } from "lucide-react";
 import { AppNavbar } from "@/components/AppNavbar";
 import { useAuth } from "@/hooks/useAuth";
 import { useShare } from "@/hooks/useShare";
@@ -37,6 +37,14 @@ import {
 } from "@/lib/libretto";
 import { courseColor } from "./Index";
 
+type Semester = "y1s1" | "y1s2" | "y2s1" | "y2s2" | "y3s1" | "y3s2" | "y4s1" | "y4s2" | "y5s1" | "y5s2";
+
+const SEMESTERS: Semester[] = [
+  "y1s1", "y1s2", "y2s1", "y2s2", "y3s1", "y3s2", "y4s1", "y4s2", "y5s1", "y5s2",
+];
+
+const SEMESTER_NONE = "__none__";
+
 type Exam = {
   id: string;
   name: string;
@@ -45,6 +53,7 @@ type Exam = {
   lode: boolean;
   cfu: number;
   course_id: string | null;
+  semester: Semester | null;
 };
 
 type Course = {
@@ -85,6 +94,9 @@ const Libretto = () => {
   const [lode, setLode] = useState(false);
   const [cfu, setCfu] = useState<string>("");
   const [courseId, setCourseId] = useState<string>("");
+  const [semester, setSemester] = useState<string>("");
+
+  const [editingExam, setEditingExam] = useState<Exam | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -92,7 +104,7 @@ const Libretto = () => {
       const [examsRes, coursesRes] = await Promise.all([
         supabase
           .from("exams")
-          .select("id,name,date,voto,lode,cfu,course_id")
+          .select("id,name,date,voto,lode,cfu,course_id,semester")
           .order("date", { ascending: false })
           .order("created_at", { ascending: false }),
         supabase
@@ -139,6 +151,7 @@ const Libretto = () => {
     setLode(false);
     setCfu("");
     setCourseId("");
+    setSemester("");
   };
 
   const addExam = async (e: React.FormEvent) => {
@@ -167,11 +180,12 @@ const Libretto = () => {
       lode: votoNum === 100 && lode,
       cfu: cfuNum,
       course_id: courseId || null,
+      semester: (semester as Semester) || null,
     };
     const { data, error } = await supabase
       .from("exams")
       .insert(payload)
-      .select("id,name,date,voto,lode,cfu,course_id")
+      .select("id,name,date,voto,lode,cfu,course_id,semester")
       .single();
     if (error) {
       toast.error("Errore: " + error.message);
@@ -199,6 +213,49 @@ const Libretto = () => {
       if (c) setName(c.name);
     }
   };
+
+  const saveEdit = async (updated: Exam) => {
+    const trimmedName = updated.name.trim();
+    if (!trimmedName) {
+      toast.error("Inserisci il nome dell'esame");
+      return;
+    }
+    if (updated.voto < 0 || updated.voto > 100) {
+      toast.error("Il voto deve essere tra 0 e 100");
+      return;
+    }
+    if (!updated.cfu || updated.cfu <= 0) {
+      toast.error("I CFU devono essere maggiori di 0");
+      return;
+    }
+    const patch = {
+      name: trimmedName,
+      date: updated.date,
+      voto: updated.voto,
+      lode: updated.voto === 100 && updated.lode,
+      cfu: updated.cfu,
+      course_id: updated.course_id,
+      semester: updated.semester,
+    };
+    const { data, error } = await supabase
+      .from("exams")
+      .update(patch)
+      .eq("id", updated.id)
+      .select("id,name,date,voto,lode,cfu,course_id,semester")
+      .single();
+    if (error) {
+      toast.error("Errore: " + error.message);
+      return;
+    }
+    setExams((prev) =>
+      prev
+        .map((e) => (e.id === updated.id ? (data as Exam) : e))
+        .sort((a, b) => b.date.localeCompare(a.date))
+    );
+    setEditingExam(null);
+    toast.success("Esame aggiornato");
+  };
+
 
   return (
     <main className="min-h-screen bg-background text-foreground">
@@ -348,8 +405,9 @@ const Libretto = () => {
             {/* DESKTOP */}
             <div className="hidden md:block">
               <div className="hairline" />
-              <div className="grid grid-cols-[minmax(0,2fr)_140px_100px_120px_56px] items-end gap-4 py-5">
+              <div className="grid grid-cols-[minmax(0,2fr)_80px_140px_100px_120px_88px] items-end gap-4 py-5">
                 <span className="label-meta">Esame</span>
+                <span className="label-meta">Sem.</span>
                 <span className="label-meta">Data</span>
                 <span className="label-meta text-right">CFU</span>
                 <span className="label-meta text-right">Voto</span>
@@ -360,7 +418,7 @@ const Libretto = () => {
                 const course = e.course_id ? courseMap.get(e.course_id) : null;
                 return (
                   <div key={e.id}>
-                    <div className="grid grid-cols-[minmax(0,2fr)_140px_100px_120px_56px] items-center gap-4 py-5">
+                    <div className="grid grid-cols-[minmax(0,2fr)_80px_140px_100px_120px_88px] items-center gap-4 py-5">
                       <div className="font-serif text-2xl truncate flex items-center gap-2 min-w-0">
                         {course && (
                           <span
@@ -369,6 +427,9 @@ const Libretto = () => {
                           />
                         )}
                         <span className="truncate">{e.name}</span>
+                      </div>
+                      <div>
+                        {e.semester ? <SemesterBadge semester={e.semester} /> : <span className="label-meta text-muted-foreground/40">—</span>}
                       </div>
                       <div className="font-mono text-sm tabular-nums text-muted-foreground">
                         {formatDate(e.date)}
@@ -379,13 +440,22 @@ const Libretto = () => {
                       <div className="text-right">
                         <VotoBadge voto={e.voto} lode={e.lode} />
                       </div>
-                      <button
-                        onClick={() => remove(e.id)}
-                        aria-label={`Rimuovi ${e.name}`}
-                        className="justify-self-end text-muted-foreground hover:text-destructive transition-colors p-2"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          onClick={() => setEditingExam(e)}
+                          aria-label={`Modifica ${e.name}`}
+                          className="text-muted-foreground hover:text-primary transition-colors p-2"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => remove(e.id)}
+                          aria-label={`Rimuovi ${e.name}`}
+                          className="text-muted-foreground hover:text-destructive transition-colors p-2"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
                     </div>
                     <div className="hairline" />
                   </div>
@@ -411,12 +481,20 @@ const Libretto = () => {
                           )}
                           <h3 className="font-serif text-xl truncate">{e.name}</h3>
                         </div>
-                        <div className="label-meta">
-                          {formatDate(e.date)} · {e.cfu} CFU
+                        <div className="label-meta flex items-center gap-2 flex-wrap">
+                          <span>{formatDate(e.date)} · {e.cfu} CFU</span>
+                          {e.semester && <SemesterBadge semester={e.semester} />}
                         </div>
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
                         <VotoBadge voto={e.voto} lode={e.lode} />
+                        <button
+                          onClick={() => setEditingExam(e)}
+                          aria-label={`Modifica ${e.name}`}
+                          className="text-muted-foreground hover:text-primary transition-colors p-1"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
                         <button
                           onClick={() => remove(e.id)}
                           aria-label={`Rimuovi ${e.name}`}
@@ -431,6 +509,7 @@ const Libretto = () => {
                 );
               })}
             </div>
+
           </>
         )}
       </section>
@@ -501,6 +580,27 @@ const Libretto = () => {
                   className="bg-transparent border-b border-surface-dark-foreground/40 focus:border-accent outline-none py-3 font-mono text-lg placeholder:text-surface-dark-foreground/40 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 />
               </div>
+              <div>
+                <label className="label-meta text-surface-dark-foreground/60 block mb-2">
+                  Semestre (opzionale)
+                </label>
+                <Select
+                  value={semester || SEMESTER_NONE}
+                  onValueChange={(v) => setSemester(v === SEMESTER_NONE ? "" : v)}
+                >
+                  <SelectTrigger className="bg-transparent border-0 border-b border-surface-dark-foreground/40 rounded-none focus:border-accent focus:ring-0 px-0 py-3 h-auto font-sans text-lg text-surface-dark-foreground [&>span]:text-surface-dark-foreground">
+                    <SelectValue placeholder="Nessuno" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={SEMESTER_NONE}>Nessuno</SelectItem>
+                    {SEMESTERS.map((s) => (
+                      <SelectItem key={s} value={s}>
+                        {formatSemester(s)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <div className="flex items-end gap-4">
                 <div className="flex-1">
                   <label className="label-meta text-surface-dark-foreground/60 block mb-2">
@@ -558,6 +658,13 @@ const Libretto = () => {
       >
         <Plus className="h-6 w-6" />
       </a>
+
+      <EditExamDialog
+        exam={editingExam}
+        courses={courses}
+        onClose={() => setEditingExam(null)}
+        onSave={saveEdit}
+      />
 
       <Dialog open={shareOpen} onOpenChange={setShareOpen}>
         <DialogContent>
@@ -650,6 +757,178 @@ const VotoBadge = ({ voto, lode }: { voto: number; lode: boolean }) => {
     >
       {formatVoto(voto, lode)}
     </span>
+  );
+};
+
+const formatSemester = (s: Semester | string): string => {
+  const m = /^y(\d)s(\d)$/.exec(s);
+  if (!m) return s;
+  return `Anno ${m[1]} · Sem ${m[2]}`;
+};
+
+const SemesterBadge = ({ semester }: { semester: Semester | string }) => (
+  <span className="inline-flex items-center font-mono text-[10px] uppercase tracking-wider px-1.5 py-0.5 bg-secondary text-secondary-foreground rounded-sm">
+    {semester}
+  </span>
+);
+
+const EditExamDialog = ({
+  exam,
+  courses,
+  onClose,
+  onSave,
+}: {
+  exam: Exam | null;
+  courses: Course[];
+  onClose: () => void;
+  onSave: (updated: Exam) => void | Promise<void>;
+}) => {
+  const [draft, setDraft] = useState<Exam | null>(null);
+
+  useEffect(() => {
+    setDraft(exam ? { ...exam } : null);
+  }, [exam]);
+
+  if (!draft) return null;
+
+  const update = <K extends keyof Exam>(key: K, value: Exam[K]) =>
+    setDraft((d) => (d ? { ...d, [key]: value } : d));
+
+  return (
+    <Dialog open={!!exam} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Modifica esame</DialogTitle>
+          <DialogDescription>Aggiorna i dettagli dell'esame.</DialogDescription>
+        </DialogHeader>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            onSave(draft);
+          }}
+          className="space-y-4"
+        >
+          <div>
+            <label className="label-meta block mb-1.5">Nome</label>
+            <input
+              value={draft.name}
+              onChange={(e) => update("name", e.target.value)}
+              className="w-full bg-background border border-input rounded-md px-3 py-2 font-sans text-base focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+          </div>
+          {courses.length > 0 && (
+            <div>
+              <label className="label-meta block mb-1.5">Materia</label>
+              <Select
+                value={draft.course_id ?? SEMESTER_NONE}
+                onValueChange={(v) => update("course_id", v === SEMESTER_NONE ? null : v)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Nessuna materia" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={SEMESTER_NONE}>Nessuna materia</SelectItem>
+                  {courses.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      <span className="inline-flex items-center gap-2">
+                        <span
+                          className="h-2.5 w-2.5 rounded-full"
+                          style={{ backgroundColor: courseColor(c) }}
+                        />
+                        {c.name}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+          <div>
+            <label className="label-meta block mb-1.5">Semestre</label>
+            <Select
+              value={draft.semester ?? SEMESTER_NONE}
+              onValueChange={(v) => update("semester", v === SEMESTER_NONE ? null : (v as Semester))}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Nessuno" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={SEMESTER_NONE}>Nessuno</SelectItem>
+                {SEMESTERS.map((s) => (
+                  <SelectItem key={s} value={s}>
+                    {s} — {formatSemester(s)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="label-meta block mb-1.5">Data</label>
+              <input
+                type="date"
+                value={draft.date}
+                onChange={(e) => update("date", e.target.value)}
+                className="w-full bg-background border border-input rounded-md px-3 py-2 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+            </div>
+            <div>
+              <label className="label-meta block mb-1.5">CFU</label>
+              <input
+                type="number"
+                min={1}
+                max={60}
+                value={draft.cfu}
+                onChange={(e) => update("cfu", parseInt(e.target.value, 10) || 0)}
+                className="w-full bg-background border border-input rounded-md px-3 py-2 font-mono text-base focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+            </div>
+          </div>
+          <div className="flex items-end gap-4">
+            <div className="flex-1">
+              <label className="label-meta block mb-1.5">Voto</label>
+              <input
+                type="number"
+                min={0}
+                max={100}
+                value={draft.voto}
+                onChange={(e) => update("voto", parseInt(e.target.value, 10) || 0)}
+                className="w-full bg-background border border-input rounded-md px-3 py-2 font-mono text-lg tabular-nums focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+            </div>
+            <label
+              className={`flex items-center gap-2 cursor-pointer select-none label-meta pb-2 transition-opacity ${
+                draft.voto === 100 ? "opacity-100" : "opacity-40 pointer-events-none"
+              }`}
+            >
+              <input
+                type="checkbox"
+                checked={draft.lode}
+                onChange={(e) => update("lode", e.target.checked)}
+                className="accent-accent"
+              />
+              <Award className="h-3.5 w-3.5" />
+              Lode
+            </label>
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 font-mono text-sm uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Annulla
+            </button>
+            <button
+              type="submit"
+              className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 font-mono text-sm uppercase tracking-wider hover:opacity-90 transition-opacity rounded-md"
+            >
+              <Check className="h-4 w-4" /> Salva
+            </button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 };
 
