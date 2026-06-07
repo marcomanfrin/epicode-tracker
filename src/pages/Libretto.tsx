@@ -37,6 +37,14 @@ import {
 } from "@/lib/libretto";
 import { courseColor } from "./Index";
 
+type Semester = "y1s1" | "y1s2" | "y2s1" | "y2s2" | "y3s1" | "y3s2" | "y4s1" | "y4s2" | "y5s1" | "y5s2";
+
+const SEMESTERS: Semester[] = [
+  "y1s1", "y1s2", "y2s1", "y2s2", "y3s1", "y3s2", "y4s1", "y4s2", "y5s1", "y5s2",
+];
+
+const SEMESTER_NONE = "__none__";
+
 type Exam = {
   id: string;
   name: string;
@@ -45,6 +53,7 @@ type Exam = {
   lode: boolean;
   cfu: number;
   course_id: string | null;
+  semester: Semester | null;
 };
 
 type Course = {
