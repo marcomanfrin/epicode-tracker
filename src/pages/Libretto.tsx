@@ -405,8 +405,9 @@ const Libretto = () => {
             {/* DESKTOP */}
             <div className="hidden md:block">
               <div className="hairline" />
-              <div className="grid grid-cols-[minmax(0,2fr)_140px_100px_120px_56px] items-end gap-4 py-5">
+              <div className="grid grid-cols-[minmax(0,2fr)_80px_140px_100px_120px_88px] items-end gap-4 py-5">
                 <span className="label-meta">Esame</span>
+                <span className="label-meta">Sem.</span>
                 <span className="label-meta">Data</span>
                 <span className="label-meta text-right">CFU</span>
                 <span className="label-meta text-right">Voto</span>
@@ -417,7 +418,7 @@ const Libretto = () => {
                 const course = e.course_id ? courseMap.get(e.course_id) : null;
                 return (
                   <div key={e.id}>
-                    <div className="grid grid-cols-[minmax(0,2fr)_140px_100px_120px_56px] items-center gap-4 py-5">
+                    <div className="grid grid-cols-[minmax(0,2fr)_80px_140px_100px_120px_88px] items-center gap-4 py-5">
                       <div className="font-serif text-2xl truncate flex items-center gap-2 min-w-0">
                         {course && (
                           <span
@@ -426,6 +427,9 @@ const Libretto = () => {
                           />
                         )}
                         <span className="truncate">{e.name}</span>
+                      </div>
+                      <div>
+                        {e.semester ? <SemesterBadge semester={e.semester} /> : <span className="label-meta text-muted-foreground/40">—</span>}
                       </div>
                       <div className="font-mono text-sm tabular-nums text-muted-foreground">
                         {formatDate(e.date)}
@@ -436,13 +440,22 @@ const Libretto = () => {
                       <div className="text-right">
                         <VotoBadge voto={e.voto} lode={e.lode} />
                       </div>
-                      <button
-                        onClick={() => remove(e.id)}
-                        aria-label={`Rimuovi ${e.name}`}
-                        className="justify-self-end text-muted-foreground hover:text-destructive transition-colors p-2"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          onClick={() => setEditingExam(e)}
+                          aria-label={`Modifica ${e.name}`}
+                          className="text-muted-foreground hover:text-primary transition-colors p-2"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => remove(e.id)}
+                          aria-label={`Rimuovi ${e.name}`}
+                          className="text-muted-foreground hover:text-destructive transition-colors p-2"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
                     </div>
                     <div className="hairline" />
                   </div>
@@ -468,12 +481,20 @@ const Libretto = () => {
                           )}
                           <h3 className="font-serif text-xl truncate">{e.name}</h3>
                         </div>
-                        <div className="label-meta">
-                          {formatDate(e.date)} · {e.cfu} CFU
+                        <div className="label-meta flex items-center gap-2 flex-wrap">
+                          <span>{formatDate(e.date)} · {e.cfu} CFU</span>
+                          {e.semester && <SemesterBadge semester={e.semester} />}
                         </div>
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
                         <VotoBadge voto={e.voto} lode={e.lode} />
+                        <button
+                          onClick={() => setEditingExam(e)}
+                          aria-label={`Modifica ${e.name}`}
+                          className="text-muted-foreground hover:text-primary transition-colors p-1"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
                         <button
                           onClick={() => remove(e.id)}
                           aria-label={`Rimuovi ${e.name}`}
@@ -488,6 +509,7 @@ const Libretto = () => {
                 );
               })}
             </div>
+
           </>
         )}
       </section>
