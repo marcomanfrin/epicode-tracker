@@ -1,3 +1,4 @@
+import { Helmet } from "react-helmet-async";
 import { useEffect, useMemo, useState } from "react";
 import { Plus, Trash2, Minus, GripVertical, Copy, Check } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
@@ -208,6 +209,11 @@ const Index = () => {
 
   return (
     <main className="min-h-screen bg-background text-foreground">
+      <Helmet>
+        <title>Course Tracker — Gestione moduli e crediti universitari</title>
+        <meta name="description" content="Traccia i moduli completati e da caricare per ogni corso universitario. Calcola la media e gestisci il libretto degli esami." />
+        <link rel="canonical" href="https://epicode-tracker.lovable.app/" />
+      </Helmet>
       <AppNavbar
         onShare={openShare}
         actions={

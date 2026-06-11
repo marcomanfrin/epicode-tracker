@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Helmet } from "react-helmet-async";
 import { useParams } from "react-router-dom";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import {
@@ -342,6 +343,11 @@ const Shared = () => {
 
   return (
     <main className="min-h-screen bg-background text-foreground">
+      <Helmet>
+        <title>Vista condivisa · Course Tracker</title>
+        <meta name="description" content="Visualizza in sola lettura i corsi, il calendario e i progressi condivisi tramite link pubblico." />
+        <link rel="canonical" href={`https://epicode-tracker.lovable.app/share/${token}`} />
+      </Helmet>
       <header className="container-editorial pt-16 pb-12 md:pt-24 md:pb-20">
         <div className="flex items-center justify-between mb-10 gap-4">
           <span className="label-meta">Course Tracker · Vista condivisa</span>

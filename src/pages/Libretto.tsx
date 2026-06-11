@@ -1,3 +1,4 @@
+import { Helmet } from "react-helmet-async";
 import { useEffect, useMemo, useState } from "react";
 import { Plus, Trash2, GraduationCap, Award, BookCheck, Copy, Check, TrendingUp, Pencil } from "lucide-react";
 import { AppNavbar } from "@/components/AppNavbar";
@@ -265,6 +266,11 @@ const Libretto = () => {
 
   return (
     <main className="min-h-screen bg-background text-foreground">
+      <Helmet>
+        <title>Libretto · Course Tracker</title>
+        <meta name="description" content="Registra gli esami sostenuti con voto e CFU. Calcola la media ponderata e il voto di partenza per la laurea." />
+        <link rel="canonical" href="https://epicode-tracker.lovable.app/libretto" />
+      </Helmet>
       <AppNavbar
         onShare={openShare}
         actions={

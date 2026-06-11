@@ -1,3 +1,4 @@
+import { Helmet } from "react-helmet-async";
 import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, Plus, Trash2, Check, Pencil, BookOpen, Briefcase, Sun, Brain, FolderKanban, ClipboardCheck, StickyNote, Copy, type LucideIcon } from "lucide-react";
 import { AppNavbar } from "@/components/AppNavbar";
@@ -689,6 +690,11 @@ const Calendar = () => {
 
   return (
     <main className="min-h-screen bg-background text-foreground">
+      <Helmet>
+        <title>Calendario · Course Tracker</title>
+        <meta name="description" content="Organizza lezioni, studio, esami e attività per ogni corso universitario nel calendario interattivo." />
+        <link rel="canonical" href="https://epicode-tracker.lovable.app/calendar" />
+      </Helmet>
       <AppNavbar onShare={openShare} />
       <header className="container-editorial pt-6 pb-6 md:pt-16 md:pb-12">
         <h1 className="font-serif text-4xl sm:text-5xl md:text-7xl leading-[0.95] tracking-tight">
