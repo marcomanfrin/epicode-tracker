@@ -266,6 +266,11 @@ const Libretto = () => {
 
   return (
     <main className="min-h-screen bg-background text-foreground">
+      <Helmet>
+        <title>Libretto · Course Tracker</title>
+        <meta name="description" content="Registra gli esami sostenuti con voto e CFU. Calcola la media ponderata e il voto di partenza per la laurea." />
+        <link rel="canonical" href="https://epicode-tracker.lovable.app/libretto" />
+      </Helmet>
       <AppNavbar
         onShare={openShare}
         actions={
