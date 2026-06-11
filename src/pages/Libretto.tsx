@@ -1,3 +1,4 @@
+import { Helmet } from "react-helmet-async";
 import { useEffect, useMemo, useState } from "react";
 import { Plus, Trash2, GraduationCap, Award, BookCheck, Copy, Check, TrendingUp, Pencil } from "lucide-react";
 import { AppNavbar } from "@/components/AppNavbar";

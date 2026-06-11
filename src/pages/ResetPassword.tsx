@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Helmet } from "react-helmet-async";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -10,7 +11,6 @@ const ResetPassword = () => {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    document.title = "Reimposta password · Course Tracker";
     // Supabase parses the recovery token from the URL hash automatically
     // and emits a PASSWORD_RECOVERY event.
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
@@ -41,6 +41,12 @@ const ResetPassword = () => {
   };
 
   return (
+    <>
+      <Helmet>
+        <title>Reimposta password · Course Tracker</title>
+        <meta name="description" content="Reimposta la password del tuo account Course Tracker per accedere di nuovo ai tuoi dati." />
+        <link rel="canonical" href="https://epicode-tracker.lovable.app/reset-password" />
+      </Helmet>
     <main className="min-h-screen bg-background text-foreground flex items-center">
       <div className="container-editorial w-full">
         <div className="max-w-md mx-auto">
@@ -79,6 +85,7 @@ const ResetPassword = () => {
         </div>
       </div>
     </main>
+    </>
   );
 };
 

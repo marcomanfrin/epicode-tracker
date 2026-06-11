@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Helmet } from "react-helmet-async";
 import { Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -13,14 +14,6 @@ const Auth = () => {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
 
-  useEffect(() => {
-    document.title =
-      mode === "login"
-        ? "Accedi · Course Tracker"
-        : mode === "signup"
-        ? "Registrati · Course Tracker"
-        : "Recupera password · Course Tracker";
-  }, [mode]);
 
   if (loading) return null;
   if (user) return <Navigate to="/" replace />;
@@ -76,6 +69,12 @@ const Auth = () => {
     mode === "login" ? "Accesso" : mode === "signup" ? "Registrazione" : "Recupero";
 
   return (
+    <>
+      <Helmet>
+        <title>{mode === "login" ? "Accedi · Course Tracker" : mode === "signup" ? "Registrati · Course Tracker" : "Recupera password · Course Tracker"}</title>
+        <meta name="description" content="Accedi al tuo account Course Tracker per sincronizzare corsi, calendario e libretto su tutti i dispositivi." />
+        <link rel="canonical" href="https://epicode-tracker.lovable.app/auth" />
+      </Helmet>
     <main className="min-h-screen bg-background text-foreground flex items-center">
       <div className="container-editorial w-full">
         <div className="max-w-md mx-auto">
@@ -151,6 +150,7 @@ const Auth = () => {
         </div>
       </div>
     </main>
+    </>
   );
 };
 

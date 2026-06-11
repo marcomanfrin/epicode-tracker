@@ -1,3 +1,4 @@
+import { Helmet } from "react-helmet-async";
 import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, Plus, Trash2, Check, Pencil, BookOpen, Briefcase, Sun, Brain, FolderKanban, ClipboardCheck, StickyNote, Copy, type LucideIcon } from "lucide-react";
 import { AppNavbar } from "@/components/AppNavbar";
