@@ -190,12 +190,18 @@ const Index = () => {
     const reordered = arrayMove(courses, oldIndex, newIndex).map((c, i) => ({
       ...c,
       position: i,
+      // Materialize the fallback palette color so it stays tied to the subject
+      // even when its position changes.
+      color: c.color || COURSE_PALETTE[i % COURSE_PALETTE.length],
     }));
     const prev = courses;
     setCourses(reordered);
     const updates = await Promise.all(
       reordered.map((c) =>
-        supabase.from("courses").update({ position: c.position }).eq("id", c.id),
+        supabase
+          .from("courses")
+          .update({ position: c.position, color: c.color })
+          .eq("id", c.id),
       ),
     );
     const failed = updates.find((u) => u.error);
