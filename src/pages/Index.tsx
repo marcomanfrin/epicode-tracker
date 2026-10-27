@@ -99,6 +99,28 @@ const Index = () => {
     };
   }, []);
 
+  // Persist the palette color of courses that still rely on the positional
+  // fallback, so their color follows the subject (not its position) when the
+  // list is reordered.
+  useEffect(() => {
+    if (loading) return;
+    const unpersisted = courses.filter((c) => !c.color);
+    if (!unpersisted.length) return;
+    unpersisted.forEach((c) => {
+      const color = COURSE_PALETTE[(c.position ?? 0) % COURSE_PALETTE.length];
+      setCourses((prev) =>
+        prev.map((x) => (x.id === c.id ? { ...x, color } : x)),
+      );
+      supabase
+        .from("courses")
+        .update({ color })
+        .eq("id", c.id)
+        .then(({ error }) => {
+          if (error) toast.error("Errore colore: " + error.message);
+        });
+    });
+  }, [courses, loading]);
+
   const totals = useMemo(() => {
     const round = (n: number) => Math.round(n * 100) / 100;
     const fatto = round(courses.reduce((s, c) => s + c.fatto, 0));
@@ -190,12 +212,18 @@ const Index = () => {
     const reordered = arrayMove(courses, oldIndex, newIndex).map((c, i) => ({
       ...c,
       position: i,
+      // Materialize the fallback palette color so it stays tied to the subject
+      // even when its position changes.
+      color: c.color || COURSE_PALETTE[i % COURSE_PALETTE.length],
     }));
     const prev = courses;
     setCourses(reordered);
     const updates = await Promise.all(
       reordered.map((c) =>
-        supabase.from("courses").update({ position: c.position }).eq("id", c.id),
+        supabase
+          .from("courses")
+          .update({ position: c.position, color: c.color })
+          .eq("id", c.id),
       ),
     );
     const failed = updates.find((u) => u.error);
